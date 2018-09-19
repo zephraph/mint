@@ -10,3 +10,6 @@ test:
 
 documentation:
 	rm -rf docs && crystal docs
+
+ls:
+	crystal build src/language_server.cr -o mint-ls -p && mv mint-ls ~/.bin/mint-ls
