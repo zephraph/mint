@@ -28,11 +28,19 @@ module LanguageServer
       id: Int32 | String,
       method: String,
       params: P)
+
+    def run
+      {} of String => String
+    end
   end
 
   module Messages
     class Initialize
       JSON.mapping(rootPath: String)
+
+      def run
+        {hoverProvider: true}
+      end
     end
   end
 
@@ -101,22 +109,33 @@ module LanguageServer
       if content_length
         content = io.read_string(content_length.to_i)
         json = JSON.parse(content)
-
         method = json["method"].as_s
 
         message = MESSAGES[method].from_json(content)
 
         Logger.log(message.to_json)
+
+        message
       end
     end
   end
 
   class Client
-    def initialize(@io : IO)
+    def initialize(@in : IO, @out : IO)
+    end
+
+    def prepend_header(content)
+      "Content-Length: #{content.bytesize}\r\n\r\n#{content}"
     end
 
     def read
-      MessageParser.parse(@io)
+      MessageParser.parse(@in).try do |message|
+        result = message.run
+
+        @out << prepend_header(result.to_json)
+        @out.flush
+      end
+
       Logger.log("WTF")
     end
   end
@@ -146,8 +165,15 @@ end
 module Test
   extend self
 
-  def generate(message)
-    "Content-Length: #{message.bytesize}\r\n\r\n#{message}"
+  def generate(message, method, id = Random.new.hex(5))
+    body = {
+      jsonrpc: "2.0",
+      id:      id,
+      params:  JSON.parse(message),
+      method:  method,
+    }.to_json
+
+    "Content-Length: #{body.bytesize}\r\n\r\n#{body}"
   end
 end
 
@@ -365,5 +391,9 @@ a = <<-JSON
 }
 JSON
 
-# io = IO::Memory.new(Test.generate(a))
-client = LanguageServer.start
+io = IO::Memory.new(Test.generate(a, "initialize"))
+out_io = IO::Memory.new
+client = LanguageServer::Client.new(io, out_io)
+client.read
+puts out_io.rewind.gets_to_end
+# client = LanguageServer.start
