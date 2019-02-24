@@ -118,7 +118,7 @@ module Mint
           "_insertStyles(`\n#{css + media_css}\n`)"
         end
 
-      (enums + records + providers + routes + modules + stores + components + [footer])
+      (enums + records + providers + routes + modules + components + stores + [footer])
         .reject(&.empty?)
         .join("\n\n")
     end
@@ -154,8 +154,23 @@ module Mint
           }
         }
 
+        const _style = function(items) {
+          const result = {}
+          for (let item of items) {
+            if (item instanceof Map) {
+              for (let [key, value] of item) {
+                result[key] = value
+              }
+            } else {
+              for (let key in item) {
+                result[key] = item[key]
+              }
+            }
+          }
+          return result
+        }
+
         const TestContext = Mint.TestContext;
-        const Component = Mint.Component;
         const ReactDOM = Mint.ReactDOM;
         const Provider = Mint.Provider;
         const Nothing = Mint.Nothing;
@@ -171,6 +186,49 @@ module Mint
 
         class DoError extends Error {}
 
+        const excludedMethods = [
+          'componentWillMount',
+          'UNSAFE_componentWillMount',
+          'render',
+          'getSnapshotBeforeUpdate',
+          'componentDidMount',
+          'componentWillReceiveProps',
+          'UNSAFE_componentWillReceiveProps',
+          'shouldComponentUpdate',
+          'componentWillUpdate',
+          'UNSAFE_componentWillUpdate',
+          'componentDidUpdate',
+          'componentWillUnmount',
+          'componentDidCatch',
+          'setState',
+          'forceUpdate',
+          'constructor'
+        ]
+
+        const bindFunctions = (target) => {
+          const descriptors =
+            Object.getOwnPropertyDescriptors(Reflect.getPrototypeOf(target))
+
+          for (let key in descriptors) {
+            if (excludedMethods[key]) { continue }
+            const value = descriptors[key].value
+            if (typeof value !== "function") { continue }
+            target[key] = value.bind(target)
+          }
+        }
+
+        class Module {
+          constructor() {
+            bindFunctions(this)
+          }
+        }
+
+        class Component extends Mint.Component {
+          constructor(props) {
+            super(props)
+            bindFunctions(this)
+          }
+        }
         #{body}
       })()
       RESULT
