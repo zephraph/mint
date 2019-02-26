@@ -22,29 +22,39 @@ module LanguageServer
       data: D)
   end
 
-  class Message(P)
-    JSON.mapping(
-      jsonrpc: String,
-      id: Int32 | String,
-      method: String,
-      params: P)
+  abstract struct Message
+    include JSON::Serializable
+
+    property jsonrpc : String
+    property id : Int32 | String
+    property method : String
 
     def run
       {} of String => String
     end
   end
 
-  module Messages
-    class Initialize
-      JSON.mapping(rootPath: String)
+  struct Initialized < Message
+    property params : Hash(String, String)
+  end
 
-      def run
-        {hoverProvider: true}
-      end
+  struct Initialize < Message
+    struct Params
+      include JSON::Serializable
+
+      property processId : Int32?
+      property rootUri : String?
+      property trace : String
+    end
+
+    property params : Params
+
+    def run
+      {hoverProvider: true}
     end
   end
 
-  MESSAGES = {"initialize": Message(Messages::Initialize)}
+  MESSAGES = {"initialize" => Initialize, "initialized" => Initialized}
 
   class NotificationMessage(P)
     JSON.mapping(
@@ -78,46 +88,6 @@ module LanguageServer
       title: String,
       command: String,
       arguments: A)
-  end
-
-  module MessageParser
-    extend self
-
-    def self.read_headers(io)
-      headers = [] of Tuple(String, String)
-
-      loop do
-        header = read_header(io)
-        break if header.nil?
-        headers << header
-      end
-
-      headers
-    end
-
-    def self.read_header(io)
-      io.gets.try do |raw|
-        parts = raw.split(':')
-        {parts[0].strip, parts[1].strip} if parts.size == 2
-      end
-    end
-
-    def self.parse(io)
-      headers = read_headers(io)
-      content_length = headers.find(&.first.==("Content-Length")).try(&.last)
-
-      if content_length
-        content = io.read_string(content_length.to_i)
-        json = JSON.parse(content)
-        method = json["method"].as_s
-
-        message = MESSAGES[method].from_json(content)
-
-        Logger.log(message.to_json)
-
-        message
-      end
-    end
   end
 
   class Client
@@ -389,6 +359,10 @@ a = <<-JSON
     }
   ]
 }
+JSON
+
+b = <<-JSON
+{}
 JSON
 
 io = IO::Memory.new(Test.generate(a, "initialize"))
