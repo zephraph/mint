@@ -9,6 +9,11 @@ module Mint
       @position = 0
     end
 
+    def <<(node)
+      ast.nodes << node
+      node
+    end
+
     # Helpers for manipulating position
     # ----------------------------------------------------------------------------
 

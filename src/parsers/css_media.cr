@@ -34,7 +34,7 @@ module Mint
           end
         end
 
-        Ast::CssMedia.new(
+        self << Ast::CssMedia.new(
           definitions: definitions,
           from: start_position,
           comments: comments,

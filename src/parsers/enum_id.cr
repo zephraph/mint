@@ -26,7 +26,7 @@ module Mint
           char ')', EnumIdExpectedClosingParentheses
         end
 
-        Ast::EnumId.new(
+        self << Ast::EnumId.new(
           expressions: expressions,
           from: start_position,
           option: option,

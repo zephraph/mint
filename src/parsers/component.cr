@@ -69,7 +69,7 @@ module Mint
           end
         end
 
-        Ast::Component.new(
+        self << Ast::Component.new(
           properties: properties,
           functions: functions,
           from: start_position,

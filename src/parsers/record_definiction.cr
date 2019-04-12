@@ -23,7 +23,7 @@ module Mint
           ) { record_definition_field }.compact
         end
 
-        Ast::RecordDefinition.new(
+        self << Ast::RecordDefinition.new(
           from: start_position,
           comment: comment,
           fields: fields,

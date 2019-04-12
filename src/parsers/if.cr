@@ -47,7 +47,7 @@ module Mint
             end
         end
 
-        Ast::If.new(
+        self << Ast::If.new(
           truthy_head_comments: truthy_head_comments,
           truthy_tail_comments: truthy_tail_comments,
           falsy_head_comments: falsy_head_comments,

@@ -24,7 +24,7 @@ module Mint
             string_literal! RecordDefinitionFieldExpectedMapping
           end
 
-        Ast::RecordDefinitionField.new(
+        self << Ast::RecordDefinitionField.new(
           from: start_position,
           comment: comment,
           mapping: mapping,

@@ -32,7 +32,7 @@ module Mint
           with_dashes: true,
           tag: tag)
 
-        node = Ast::HtmlElement.new(
+        node = self << Ast::HtmlElement.new(
           attributes: attributes,
           from: start_position,
           children: children,

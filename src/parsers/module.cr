@@ -32,7 +32,7 @@ module Mint
           end
         end
 
-        Ast::Module.new(
+        self << Ast::Module.new(
           functions: functions,
           from: start_position,
           comments: comments,

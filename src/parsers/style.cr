@@ -37,7 +37,7 @@ module Mint
           end
         end
 
-        Ast::Style.new(
+        self << Ast::Style.new(
           definitions: definitions,
           selectors: selectors,
           from: start_position,

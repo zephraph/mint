@@ -17,7 +17,7 @@ module Mint
           variable! AccessExpectedVariable
         end
 
-        Ast::Access.new(
+        self << Ast::Access.new(
           fields: ([base] + fields).compact,
           from: start_position,
           to: position,

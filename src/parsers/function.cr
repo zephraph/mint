@@ -49,7 +49,7 @@ module Mint
 
         whitespace
 
-        Ast::Function.new(
+        self << Ast::Function.new(
           body: body.as(Ast::Expression),
           head_comments: head_comments,
           tail_comments: tail_comments,

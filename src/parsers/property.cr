@@ -28,7 +28,7 @@ module Mint
 
         default = expression! PropertyExpectedDefaultValue
 
-        Ast::Property.new(
+        self << Ast::Property.new(
           default: default.as(Ast::Expression),
           from: start_position,
           comment: comment,

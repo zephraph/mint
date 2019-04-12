@@ -29,9 +29,8 @@ module Mint
     getter test_directories, source_directories, dependencies, application
     getter external_javascripts, name, root, formatter_config
 
-    def self.parse_current : MintJson
-      path = File.join(Dir.current, "mint.json")
-      new File.read(path), Dir.current, path
+    def self.from_file(path)
+      new File.read(path), File.dirname(path), path
     rescue exception : Errno
       raise MintJsonInvalidFile, {
         "result" => exception.to_s,
@@ -39,6 +38,10 @@ module Mint
       }
     rescue error
       raise error
+    end
+
+    def self.parse_current : MintJson
+      from_file(File.join(Dir.current, "mint.json"))
     end
 
     # Calculating nodes for the snippet in errors.
@@ -168,11 +171,14 @@ module Mint
       head =
         @parser.read_string
 
+      path =
+        File.join(@root, head)
+
       raise MintJsonHeadNotExists, {
         "node" => node(location),
-      } unless File.exists?(head)
+      } unless File.exists?(path)
 
-      File.read(head)
+      File.read(path)
     rescue exception : JSON::ParseException
       raise MintJsonHeadNotString, {
         "node" => node(exception),

@@ -10,7 +10,7 @@ module Mint
 
       raise error unless value
 
-      Ast::Variable.new(
+      self << Ast::Variable.new(
         from: start_position,
         value: value,
         to: position,
@@ -27,7 +27,7 @@ module Mint
 
       raise error unless value
 
-      Ast::Variable.new(
+      self << Ast::Variable.new(
         from: start_position,
         value: value,
         to: position,

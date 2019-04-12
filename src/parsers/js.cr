@@ -12,7 +12,7 @@ module Mint
 
         char '`', JsExpectedClosingTick
 
-        Ast::Js.new(
+        self << Ast::Js.new(
           from: start_position,
           value: value,
           to: position,

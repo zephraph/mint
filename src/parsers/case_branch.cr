@@ -14,7 +14,7 @@ module Mint
 
         raise CaseBranchExpectedExpression unless expression = self.expression
 
-        Ast::CaseBranch.new(
+        self << Ast::CaseBranch.new(
           match: match.as(Ast::EnumDestructuring | Ast::Expression | Nil),
           expression: expression.as(Ast::Expression),
           from: start_position,

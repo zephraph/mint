@@ -44,7 +44,7 @@ module Mint
           right = operation(right, next_operator)
         else
           return operation(
-            Ast::Operation.new(
+            self << Ast::Operation.new(
               right: right.as(Ast::Expression),
               left: left.as(Ast::Expression),
               operator: operator,
@@ -55,7 +55,7 @@ module Mint
         end
       end
 
-      Ast::Operation.new(
+      self << Ast::Operation.new(
         operator: operator,
         from: left.from,
         to: right.to,

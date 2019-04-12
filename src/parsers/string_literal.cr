@@ -29,7 +29,7 @@ module Mint
           track_back_whitespace
         end
 
-        Ast::StringLiteral.new(
+        self << Ast::StringLiteral.new(
           from: start_position,
           broken: broken,
           value: value,

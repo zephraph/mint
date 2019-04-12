@@ -17,7 +17,6 @@ module Mint
 
     @sockets = [] of HTTP::WebSocket
     @error : String | Nil = nil
-    @watcher : AstWatcher
     @ast : Ast = Ast.new
     @script = ""
     @host : String
@@ -29,32 +28,57 @@ module Mint
         MintJson.parse_current.check_dependencies!
       end
 
-      @watcher =
-        AstWatcher.new(->{ SourceFiles.all },
-          ->(file : String, ast : Ast) {
-            if @auto_format
-              formatted =
-                Formatter.new(ast, MintJson.parse_current.formatter_config).format
+      workspace = Workspace.current
+      workspace.format = auto_format
+      init(workspace)
+      workspace.on "change" do |result|
+        update result
+        notify
+      end
 
-              if formatted != File.read(file)
-                File.write(file, formatted)
-              end
-            end
-          }, true) do |result|
-          case result
-          when Ast
-            @ast = result
-            @error = nil
-            compile_script
-          when Error
-            @error = result.to_html
-          end
-        end
+      workspace.watch
 
       watch_for_changes
       setup_kemal
 
       Server.run "Development", @host, @port
+    end
+
+    def init(workspace)
+      prefix = "#{COG} Parsing files"
+      line = ""
+
+      elapsed = Time.measure do
+        workspace.initialize_cache do |_, index, size|
+          counter =
+            "#{index} / #{size}".colorize.mode(:bold)
+
+          line =
+            "#{prefix}: #{counter}".ljust(line.size)
+
+          terminal.io.print(line + "\r")
+          terminal.io.flush
+        end
+      end
+
+      elapsed = TimeFormat.auto(elapsed).colorize.mode(:bold).to_s
+      terminal.io.print "#{prefix}... #{elapsed}".ljust(line.size) + "\n"
+
+      @ast = workspace.ast
+      compile_script
+    rescue exception : Error
+      @error = exception.to_html
+    end
+
+    def update(result)
+      case result
+      when Ast
+        @ast = result
+        @error = nil
+        compile_script
+      when Error
+        @error = result.to_html
+      end
     end
 
     def compile_script
@@ -167,25 +191,6 @@ module Mint
               notify
             end
           end
-        end
-      end
-
-      spawn do
-        @watcher.watch do |result|
-          case result
-          when Ast
-            @ast = result
-            @error = nil
-
-            terminal.measure "#{COG} Files changed recompiling... " do
-              compile_script
-            end
-          when Error
-            @error = result.to_html
-            @ast = Ast.new
-          end
-
-          notify
         end
       end
     end

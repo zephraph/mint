@@ -10,7 +10,7 @@ module Mint
 
         expression = expression! EncodeExpectedExpression
 
-        Ast::Encode.new(
+        self << Ast::Encode.new(
           expression: expression.as(Ast::Expression),
           from: start_position,
           to: position,

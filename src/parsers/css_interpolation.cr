@@ -13,7 +13,7 @@ module Mint
 
         char "}", CssInterpolationExpectedClosingBracket
 
-        Ast::CssInterpolation.new(
+        self << Ast::CssInterpolation.new(
           expression: expression,
           from: start_position,
           to: position,

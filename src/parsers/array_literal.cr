@@ -18,7 +18,7 @@ module Mint
 
         char "]", ArrayExpectedClosingBracket
 
-        Ast::ArrayLiteral.new(
+        self << Ast::ArrayLiteral.new(
           from: start_position,
           items: items,
           to: position,

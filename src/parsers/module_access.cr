@@ -15,7 +15,7 @@ module Mint
         variable =
           variable! ModuleAccessExpectedFunction
 
-        Ast::ModuleAccess.new(
+        self << Ast::ModuleAccess.new(
           from: start_position,
           variable: variable,
           to: position,

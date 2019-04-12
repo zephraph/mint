@@ -29,7 +29,7 @@ module Mint
 
         char '}', RecordUpdateExpectedClosingBracket
 
-        Ast::RecordUpdate.new(
+        self << Ast::RecordUpdate.new(
           from: start_position,
           variable: variable,
           fields: fields,
