@@ -38,7 +38,7 @@ module Mint
 
       @@workspaces[root] ||= begin
         workspace = Workspace.new(root)
-        workspace.initialize_cache { }
+        workspace.update_cache
         workspace.watch
         workspace
       end
@@ -50,6 +50,7 @@ module Mint
     @cache = {} of String => Ast
     @pattern = [] of String
 
+    getter type_checker : TypeChecker
     getter json : MintJson
     getter root : String
 
@@ -70,6 +71,9 @@ module Mint
 
       @static_watcher =
         Watcher.new(all_static_pattern)
+
+      @type_checker =
+        TypeChecker.new(Ast.new)
     end
 
     def on(event, &handler : ChangeProc)
@@ -152,11 +156,7 @@ module Mint
         .external_javascripts
     end
 
-    private def call(event, arg)
-      @event_handlers[event]?.try(&.each(&.call(arg)))
-    end
-
-    private def update_cache
+    def update_cache
       files.each do |file|
         @cache[file] ||= begin
           ast = Parser.parse(file)
@@ -176,9 +176,16 @@ module Mint
         end
       end
 
+      @type_checker = Mint::TypeChecker.new(ast, check_env: false)
+      @type_checker.check
+
       call "change", ast
     rescue error : Error
       call "change", error
+    end
+
+    private def call(event, arg)
+      @event_handlers[event]?.try(&.each(&.call(arg)))
     end
 
     private def reset_cache

@@ -53,6 +53,9 @@ require "./documentation_server"
 require "./test_runner/**"
 require "./test_runner"
 
+require "./lsp/**"
+require "./ls/**"
+
 require "./mint_json"
 require "./scaffold"
 require "./reactor"
