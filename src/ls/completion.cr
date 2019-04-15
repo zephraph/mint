@@ -182,9 +182,10 @@ module Mint
             .nodes_at_cursor(params)
             .map { |node| completions(node) }
             .flatten
-            .compact
             .uniq
             .map { |node| completion_item(node) }
+            .compact
+            .sort_by { |node| node.label }
 
         server.send({
           jsonrpc: "2.0",
