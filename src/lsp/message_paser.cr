@@ -36,6 +36,23 @@ module LSP
         content =
           io.read_string(content_length.to_i)
 
+        JSON.parse(content)
+      end
+    end
+
+    def self.parse(io)
+      headers =
+        read_headers(io)
+
+      content_length =
+        headers
+          .find(&.first.==("Content-Length"))
+          .try(&.last)
+
+      if content_length
+        content =
+          io.read_string(content_length.to_i)
+
         json =
           JSON.parse(content)
 

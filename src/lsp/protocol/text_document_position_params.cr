@@ -19,7 +19,7 @@ module LSP
     end
 
     def path
-      @uri.try(&.path).to_s
+      uri.try(&.path).to_s
     end
 
     def offset

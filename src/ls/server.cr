@@ -7,7 +7,7 @@ module Mint
       method "shutdown", Shutdown
       method "exit", Exit
 
-      def nodes_at_cursor(params : TextDocumentPositionParams)
+      def nodes_at_cursor(params : LSP::TextDocumentPositionParams)
         workspace =
           Mint::Workspace[params.path]
 

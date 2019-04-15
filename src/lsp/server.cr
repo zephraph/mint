@@ -31,8 +31,6 @@ module LSP
 
     def read
       MessageParser.parse(@in) do |name, json|
-        log(name + json)
-
         method = @@methods[name]?
 
         if method
@@ -41,8 +39,8 @@ module LSP
             .execute(self)
         end
       end
-    rescue error
-      log(error.to_s)
+      # rescue error
+      #   log(error.to_s)
     end
   end
 end

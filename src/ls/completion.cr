@@ -1,176 +1,190 @@
-module LSP
-  enum CompletionItemKind
-    Text          =  1
-    Method        =  2
-    Function      =  3
-    Constructor   =  4
-    Field         =  5
-    Variable      =  6
-    Class         =  7
-    Interface     =  8
-    Module        =  9
-    Property      = 10
-    Unit          = 11
-    Value         = 12
-    Enum          = 13
-    Keyword       = 14
-    Snippet       = 15
-    Color         = 16
-    File          = 17
-    Reference     = 18
-    Folder        = 19
-    EnumMember    = 20
-    Constant      = 21
-    Struct        = 22
-    Event         = 23
-    Operator      = 24
-    TypeParameter = 25
-  end
-
-  struct CompletionItem
-    include JSON::Serializable
-
-    # The label of this completion item. By default
-    # also the text that is inserted when selecting
-    # this completion.
-    property label : String
-
-    # The kind of this completion item. Based of the kind
-    # an icon is chosen by the editor.
-    property kind : CompletionItemKind
-
-    # A human-readable string with additional information
-    # about this item, like type or symbol information.
-    property detail : String
-
-    # A human-readable string that represents a doc-comment.
-    property documentation : String
-
-    # Indicates if this item is deprecated.
-    property deprecated : Bool
-
-    # Select this item when showing.
-    #
-    # *Note* that only one completion item can be selected and that the
-    # tool / client decides which item that is. The rule is that the *first*
-    # item of those that match best is selected.
-    property preselect : Bool
-
-    # A string that should be used when comparing this item
-    # with other items. When `falsy` the label is used.
-    @[JSON::Field(key: "sortText")]
-    property sort_text : String
-
-    # A string that should be used when filtering a set of
-    # completion items. When `falsy` the label is used.
-    @[JSON::Field(key: "filterText")]
-    property filter_text : String
-
-    # A string that should be inserted into a document when selecting
-    # this completion. When `falsy` the label is used.
-    #
-    # The `insertText` is subject to interpretation by the client side.
-    # Some tools might not take the string literally. For example
-    # VS Code when code complete is requested in this example `con<cursor position>`
-    # and a completion item with an `insertText` of `console` is provided it
-    # will only insert `sole`. Therefore it is recommended to use `textEdit` instead
-    # since it avoids additional client side interpretation.
-    #
-    # @deprecated Use textEdit instead.
-    @[JSON::Field(key: "insertText")]
-    property insert_text : String
-
-    def initialize(@label,
-                   @filter_text,
-                   @sort_text,
-                   @kind,
-                   @detail,
-                   @documentation,
-                   @deprecated,
-                   @preselect,
-                   @insert_text)
-    end
-  end
-end
-
 module Mint
   module LS
     class Completion < LSP::RequestMessage
       property params : LSP::CompletionParams
 
-      def execute(server)
-        workspace =
-          Mint::Workspace[params.path]
+      def completion_item(node : Ast::Component)
+        index = 0
 
-        items =
-          workspace.ast.components.map do |component|
-            index = 0
+        attributes =
+          node
+            .properties
+            .reject(&.name.value.==("children"))
+            .map do |property|
+              default =
+                Mint::Formatter
+                  .new(workspace.ast, workspace.json.formatter_config)
+                  .format(property.default)
+                  .gsub("}", "\\}")
 
-            attributes =
-              component
-                .properties
-                .reject(&.name.value.==("children"))
-                .map do |property|
-                  default =
-                    Mint::Formatter
-                      .new(workspace.ast, workspace.json.formatter_config)
-                      .format(property.default)
-                      .gsub("}", "\\}")
+              type =
+                workspace.type_checker.cache[property]? || Mint::TypeChecker::Type.new("")
 
-                  type =
-                    workspace.type_checker.cache[property]? || Mint::TypeChecker::Type.new("")
-
-                  value =
-                    case type.name
-                    when "String"
-                      if default == %("")
-                        %("${#{index + 2}}")
-                      else
-                        %(${#{index + 2}:#{default}})
-                      end
-                    when "Array"
-                      %([${#{index + 2}}])
-                    else
-                      %({${#{index + 2}:#{default}}\\})
-                    end
-
-                  result =
-                    "${#{index + 1}:#{property.name.value}=#{value}}"
-
-                  index += 2
-
-                  result
+              value =
+                case type.name
+                when "String"
+                  if default == %("")
+                    %("${#{index + 2}}")
+                  else
+                    %(${#{index + 2}:#{default}})
+                  end
+                when "Array"
+                  %([${#{index + 2}}])
+                else
+                  %({${#{index + 2}:#{default}}\\})
                 end
-                .to_a
 
-            snippet =
-              if attributes.size > 3
-                <<-MINT
-                <#{component.name}
-                  #{attributes.join("\n  ")}>
-                  $0
-                </#{component.name}>
-                MINT
-              else
-                <<-MINT
-                <#{component.name} #{attributes.join(" ")}>
-                  $0
-                </#{component.name}>
-                MINT
-              end
+              result =
+                "${#{index + 1}:#{property.name.value}=#{value}}"
 
-            LSP::CompletionItem.new(
-              label: component.name,
-              filter_text: component.name,
-              sort_text: component.name,
-              kind: LSP::CompletionItemKind::Snippet,
-              detail: "Component",
-              documentation: "",
-              deprecated: false,
-              preselect: false,
-              insert_text: snippet,
-            )
+              index += 2
+
+              result
+            end
+            .to_a
+
+        snippet =
+          if attributes.size > 3
+            <<-MINT
+            <#{node.name}
+              #{attributes.join("\n  ")}>
+              $0
+            </#{node.name}>
+            MINT
+          else
+            <<-MINT
+            <#{node.name} #{attributes.join(" ")}>
+              $0
+            </#{node.name}>
+            MINT
           end
+
+        LSP::CompletionItem.new(
+          kind: LSP::CompletionItemKind::Snippet,
+          filter_text: node.name,
+          sort_text: node.name,
+          label: node.name,
+          detail: "Component",
+          documentation: "",
+          deprecated: false,
+          preselect: false,
+          insert_text: snippet,
+        )
+      end
+
+      def completion_item(node : Ast::Argument)
+        name =
+          node.name.value
+
+        LSP::CompletionItem.new(
+          kind: LSP::CompletionItemKind::Variable,
+          filter_text: name,
+          sort_text: name,
+          label: name,
+          detail: "Argument",
+          documentation: "",
+          deprecated: false,
+          preselect: false,
+          insert_text: name,
+        )
+      end
+
+      def completion_item(node : Ast::Function)
+        name =
+          node.name.value
+
+        arguments =
+          node
+            .arguments
+            .each_with_index
+            .map do |(argument, index)|
+              %(${#{index + 1}:#{argument.name.value}})
+            end
+
+        snippet =
+          <<-MINT
+          #{name}(#{arguments.join(", ")})
+          MINT
+
+        LSP::CompletionItem.new(
+          kind: LSP::CompletionItemKind::Function,
+          filter_text: name,
+          sort_text: name,
+          label: name,
+          detail: "Function",
+          documentation: "",
+          deprecated: false,
+          preselect: false,
+          insert_text: snippet,
+        )
+      end
+
+      def completion_item(node : Ast::Get)
+        name =
+          node.name.value
+
+        LSP::CompletionItem.new(
+          kind: LSP::CompletionItemKind::Variable,
+          filter_text: name,
+          sort_text: name,
+          label: name,
+          detail: "Computed Property",
+          documentation: "",
+          deprecated: false,
+          preselect: false,
+          insert_text: name,
+        )
+      end
+
+      def completion_item(node : Ast::Node)
+        nil
+      end
+
+      def completions(node : Ast::Component) : Array(Ast::Node)
+        items = [] of Ast::Node
+
+        node.functions.each { |function| items << function }
+        node.gets.each { |get| items << get }
+
+        items
+      end
+
+      def completions(node : Ast::Function) : Array(Ast::Node)
+        items =
+          [] of Ast::Node
+
+        node.arguments.each do |argument|
+          items << argument
+        end
+
+        workspace.type_checker.cache[node]?.try do |type|
+          if type.parameters.last.try(&.name) == "Html"
+            workspace.ast.components.each do |component|
+              items << component
+            end
+          end
+        end
+
+        items
+      end
+
+      def completions(node : Ast::Node)
+        [] of Ast::Node
+      end
+
+      def workspace
+        Mint::Workspace[params.path]
+      end
+
+      def execute(server)
+        items =
+          server
+            .nodes_at_cursor(params)
+            .map { |node| completions(node) }
+            .flatten
+            .compact
+            .uniq
+            .map { |node| completion_item(node) }
 
         server.send({
           jsonrpc: "2.0",

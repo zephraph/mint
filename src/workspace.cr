@@ -21,7 +21,7 @@ module Mint
       root = File.dirname(path)
 
       loop do
-        raise "Invalid workspace!" if root.lchop("/").empty?
+        raise "Invalid workspace!" if root == "."
 
         if File.exists?(File.join(root, "mint.json"))
           break
@@ -159,7 +159,7 @@ module Mint
     def update_cache
       files.each do |file|
         @cache[file] ||= begin
-          ast = Parser.parse(file)
+          ast = Parser.parse(File.real_path(file))
 
           if format
             formatted =
