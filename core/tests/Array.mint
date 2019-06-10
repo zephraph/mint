@@ -954,3 +954,38 @@ suite "Array.indexOf" {
     Array.indexOf(Http.Error::Aborted, [Http.Error::Aborted]) == 0
   }
 }
+
+suite "Array.indexBy" {
+  test "it returns the index of the item" {
+    Array.indexBy(
+      "a",
+      (item : String) : String { item },
+      [
+        "a",
+        "b",
+        "c"
+      ]) == 0
+  }
+}
+
+suite "Array.sumBy" {
+  test "it sums up the array by using the function" {
+    Array.sumBy(
+      (value : Number) : Number { value },
+      [
+        1,
+        2,
+        3
+      ]) == 6
+  }
+}
+
+suite "Array.sum" {
+  test "it sums up the array" {
+    Array.sum([
+      1,
+      2,
+      3
+    ]) == 6
+  }
+}

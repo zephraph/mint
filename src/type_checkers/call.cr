@@ -9,6 +9,14 @@ module Mint
       function_type =
         resolve node.expression
 
+      if node.safe && function_type.name == "Maybe"
+        Type.new("Maybe", [check_call(node, function_type.parameters[0])])
+      else
+        check_call(node, function_type)
+      end
+    end
+
+    def check_call(node, function_type) : Checkable
       raise CallNotAFunction, {
         "node" => node,
       } unless function_type.name == "Function"
@@ -17,7 +25,9 @@ module Mint
       parameters = [] of Checkable
 
       raise CallArgumentSizeMismatch, {
-        "node" => node,
+        "call_size" => node.arguments.size.to_s,
+        "size"      => argument_size.to_s,
+        "node"      => node,
       } if node.arguments.size > argument_size
 
       node.arguments.each_with_index do |argument, index|

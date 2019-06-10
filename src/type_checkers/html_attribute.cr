@@ -33,14 +33,14 @@ module Mint
           }
         when .starts_with?("on")
           [EVENT_FUNCTION, VOID_FUNCTION]
-        when "readonly", "disabled"
+        when "readonly", "disabled", "checked"
           [BOOL]
         when "className"
           raise HtmlElementClassNameForbidden, {
             "node" => node,
           }
         when "style"
-          [STYLE_MAP]
+          [STYLE_MAP, STRING]
         else
           [STRING]
         end
