@@ -11,6 +11,10 @@ module Mint
         workspace =
           Mint::Workspace[params.path]
 
+        workspace.on "change" do
+          log("CHANGEEED!")
+        end
+
         workspace.ast.nodes.select do |item|
           next unless item.input.file == params.path
           item.from <= params.offset <= item.to
