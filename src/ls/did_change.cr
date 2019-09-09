@@ -58,7 +58,14 @@ module Mint
       property params : LSP::DidChangeTextDocumentParams
 
       def execute(server)
+        uri = URI.parse(params.text_document.uri)
+
+        workspace = Workspace[uri.path.to_s]
+        workspace.update(params.content_changes.first.text, uri.path)
+        server.log(Workspace.workspaces.keys)
         server.log(params.to_json)
+        server.log(workspace.cache.keys)
+        server.log(uri.path)
       end
     end
   end

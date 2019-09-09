@@ -36,40 +36,44 @@ module Mint
 
         workspace = Workspace[uri.path.to_s]
 
-        result = server.nodes_at_cursor(params)
-
-        node = result[0]?
-        parent = result[1]?
-
-        server.log(node.class.to_s)
-        server.log(parent.class.to_s)
-
         contents =
-          case parent
-          when Ast::Function
-            hover(parent)
-          when Ast::HtmlElement
-            hover(parent)
-          when Ast::EnumId
-            hover(parent, workspace)
+          if error = workspace.error
+            "Cannot provide hover data because, there is an error with your project."
           else
-            case node
-            when Ast::Function
-              hover(node)
-            when Ast::HtmlElement
-              hover(node)
-            when Ast::EnumId
-              hover(node, workspace)
-            when Ast::Node
-              type = workspace.type_checker.cache[node]?
+            result = server.nodes_at_cursor(params)
 
-              if type
-                type.to_pretty
-              else
-                "ASD"
-              end
+            node = result[0]?
+            parent = result[1]?
+
+            server.log(node.class.to_s)
+            server.log(parent.class.to_s)
+
+            case parent
+            when Ast::Function
+              hover(parent)
+            when Ast::HtmlElement
+              hover(parent)
+            when Ast::EnumId
+              hover(parent, workspace)
             else
-              "WTF"
+              case node
+              when Ast::Function
+                hover(node)
+              when Ast::HtmlElement
+                hover(node)
+              when Ast::EnumId
+                hover(node, workspace)
+              when Ast::Node
+                type = workspace.type_checker.cache[node]?
+
+                if type
+                  type.to_pretty
+                else
+                  "ASD"
+                end
+              else
+                "WTF"
+              end
             end
           end
 

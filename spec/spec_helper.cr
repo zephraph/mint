@@ -100,6 +100,10 @@ class Workspace
   @id : String
   @files : Hash(String, File) = {} of String => File
 
+  def workspace
+    Mint::Workspace[File.join(@root, "test.file")]
+  end
+
   def initialize
     @id =
       Random.new.hex(5)
@@ -147,6 +151,28 @@ def with_workspace
   ensure
     workspace.cleanup
   end
+end
+
+def notify_lsp(method, message)
+  in_io =
+    IO::Memory.new
+
+  out_io =
+    IO::Memory.new
+
+  server =
+    Mint::LS::Server.new(in_io, out_io)
+
+  body = {
+    jsonrpc: "2.0",
+    params:  message,
+    method:  method,
+  }.to_json
+
+  in_io.print "Content-Length: #{body.bytesize}\r\n\r\n#{body}"
+  in_io.rewind
+
+  server.read
 end
 
 def expect_lsp(id, method, message, expected)

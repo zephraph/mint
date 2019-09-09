@@ -9,6 +9,8 @@ module Mint
   class Workspace
     @@workspaces = {} of String => Workspace
 
+    class_getter workspaces
+
     def self.from_file(path : String) : Workspace
       new(root_from_file(path))
     end
@@ -21,7 +23,7 @@ module Mint
       root = File.dirname(path)
 
       loop do
-        raise "Invalid workspace!" if root == "."
+        raise "Invalid workspace!" if root == "." || root == "/"
 
         if File.exists?(File.join(root, "mint.json"))
           break
@@ -51,8 +53,10 @@ module Mint
     @pattern = [] of String
 
     getter type_checker : TypeChecker
+    getter error : Error | Nil
     getter json : MintJson
     getter root : String
+    getter cache : Hash(String, Ast)
 
     property format : Bool = false
 
@@ -158,30 +162,54 @@ module Mint
 
     def update_cache
       files.each do |file|
-        @cache[file] ||= begin
-          ast = Parser.parse(File.real_path(file))
+        path = File.real_path(file)
 
-          if format
-            formatted =
-              Formatter
-                .new(ast, json.formatter_config)
-                .format
-
-            if formatted != File.read(file)
-              File.write(file, formatted)
-            end
-          end
-
-          ast
+        @cache[path] ||= begin
+          process(File.read(path), path)
         end
       end
 
-      @type_checker = Mint::TypeChecker.new(ast, check_env: false)
-      @type_checker.check
+      check!
+
+      @error = nil
 
       call "change", ast
     rescue error : Error
+      @error = error
+
       call "change", error
+    end
+
+    def update(contents, file)
+      @cache[file] = process(contents, file)
+      puts @cache.keys.inspect, file.inspect
+      check!
+      @error = nil
+    rescue error : Error
+      puts error
+      @error = error
+    end
+
+    private def process(contents, file)
+      ast = Parser.parse(contents, File.real_path(file))
+
+      if format
+        formatted =
+          Formatter
+            .new(ast, json.formatter_config)
+            .format
+
+        if formatted != File.read(file)
+          File.write(file, formatted)
+        end
+      end
+
+      ast
+    end
+
+    private def check!
+      @type_checker = Mint::TypeChecker.new(ast, check_env: false)
+      @type_checker.check
     end
 
     private def call(event, arg)
