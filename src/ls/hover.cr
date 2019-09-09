@@ -38,7 +38,7 @@ module Mint
 
         result = server.nodes_at_cursor(params)
 
-        node = result[0]
+        node = result[0]?
         parent = result[1]?
 
         server.log(node.class.to_s)

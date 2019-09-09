@@ -3,6 +3,7 @@ module Mint
     class Server < LSP::Server
       method "initialize", Initialize
       method "textDocument/hover", Hover
+      method "textDocument/didChange", DidChange
       method "textDocument/completion", Completion
       method "shutdown", Shutdown
       method "exit", Exit
@@ -10,10 +11,6 @@ module Mint
       def nodes_at_cursor(params : LSP::TextDocumentPositionParams)
         workspace =
           Mint::Workspace[params.path]
-
-        workspace.on "change" do
-          log("CHANGEEED!")
-        end
 
         workspace.ast.nodes.select do |item|
           next unless item.input.file == params.path

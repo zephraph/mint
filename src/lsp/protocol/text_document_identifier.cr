@@ -1,5 +1,5 @@
 module LSP
-  struct TextDocumentIdentifier
+  class TextDocumentIdentifier
     include JSON::Serializable
 
     property uri : String
