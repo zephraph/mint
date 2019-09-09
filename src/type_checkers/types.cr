@@ -25,6 +25,10 @@ module Mint
       def to_pretty
         @instance.try(&.to_pretty) || name
       end
+
+      def have_holes?
+        true
+      end
     end
 
     class Type
@@ -51,6 +55,10 @@ module Mint
             "#{name}(#{params.join(", ")})"
           end
         end
+      end
+
+      def have_holes?
+        parameters.any?(&.have_holes?)
       end
 
       def to_s
@@ -115,6 +123,10 @@ module Mint
         end
       end
 
+      def have_holes?
+        fields.values.any?(&.have_holes?)
+      end
+
       def ==(other : Record)
         self == other.fields
       end
@@ -129,8 +141,53 @@ module Mint
       end
     end
 
+    class PartialRecord < Record
+      def to_s
+        if fields.empty?
+          "(...)"
+        else
+          defs = fields.map { |key, value| "#{key}: #{value.to_s}" }.join(", ")
+          "(#{defs}, ...)"
+        end
+      end
+
+      def to_pretty
+        return "(...)" if fields.empty?
+
+        defs =
+          fields
+            .map do |key, value|
+              result = value.to_pretty
+              if result =~ /\n/
+                "#{key}:\n#{value.to_pretty.indent}"
+              else
+                "#{key}: #{value.to_pretty}"
+              end
+            end
+
+        defs << "..."
+
+        if defs.any?(&.=~(/\n/)) || defs.size > 4
+          "(\n#{defs.join(",\n").indent})"
+        else
+          "(#{defs.join(", ")})"
+        end
+      end
+
+      def ==(other : Hash(String, Checkable))
+        fields.all? do |key, type|
+          next false unless other[key]?
+          !Comparer.compare(other[key], type).nil?
+        end
+      end
+    end
+
     module Comparer
       extend self
+
+      def matches_any?(node, targets)
+        targets.any? { |target| compare(node, target) }
+      end
 
       def compare(node1, node2)
         prune(unify(fresh(prune(node1)), fresh(prune(node2))))
@@ -265,6 +322,17 @@ module Mint
             end
 
         Type.new(node.name, params)
+      end
+
+      def fresh(node : PartialRecord)
+        fields =
+          node
+            .fields
+            .each_with_object({} of String => Checkable) do |(key, value), memo|
+              memo[key] = fresh value
+            end
+
+        PartialRecord.new(node.name, fields)
       end
 
       def fresh(node : Record)

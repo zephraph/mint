@@ -123,11 +123,17 @@ module Mint
 
     type_error RecordFieldsConflict
     type_error RecordNameConflict
+    type_error RecordWithHoles
 
     def add_record(record, node)
     end
 
     def add_record(record : Record, node)
+      raise RecordWithHoles, {
+        "record" => record,
+        "node"   => node,
+      } if record.have_holes?
+
       other = records.find(&.==(record))
 
       raise RecordFieldsConflict, {
@@ -209,6 +215,8 @@ module Mint
           if @stack.includes?(node)
             if node.is_a?(Ast::Component)
               return NEVER.as(Checkable)
+            elsif node.is_a?(Ast::Function)
+              static_type_signature(node)
             else
               raise Recursion, {
                 "caller_node" => @stack.last,

@@ -15,15 +15,15 @@ component Main {
     ""
   }
 }
-------------------------------------------------------------FunctionTypeMismatch
+-----------------------------------------------------------------RecordWithHoles
 record Test {
-  a : String,
+  a : Array(a),
   b : Number
 }
-
+--------------------------------------------------------------------------------
 component Main {
-  fun test : Test {
-    {
+  fun test : Object {
+    encode {
       a = "Hello",
       b = "Blah"
     }

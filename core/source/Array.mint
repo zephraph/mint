@@ -11,9 +11,9 @@ module Array {
     (() => {
       let first = #{array}[0]
       if (first !== undefined) {
-        return new Just(first)
+        return #{Maybe::Just(`first`)}
       } else {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -41,9 +41,9 @@ module Array {
     (() => {
       let last = #{array}[#{array}.length - 1]
       if (last !== undefined) {
-        return new Just(last)
+        return #{Maybe::Just(`last`)}
       } else {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -141,9 +141,9 @@ module Array {
       let item = #{array}.find(#{func})
 
       if (item != undefined) {
-        return new Just(item)
+        return #{Maybe::Just(`item`)}
       } else {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -284,9 +284,11 @@ module Array {
     `
     (() => {
       if (#{array}.length) {
-        return new Just(#{array}[Math.floor(Math.random() * #{array}.length)])
+        const item = #{array}[Math.floor(Math.random() * #{array}.length)]
+
+        return #{Maybe::Just(`item`)}
       } else {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -305,7 +307,7 @@ module Array {
   /*
   Put two lists together:
 
-    Array.Extra.append([1,1,2] [3,5,8]) == [1,1,2,3,5,8]
+    Array.append([1,1,2] [3,5,8]) == [1,1,2,3,5,8]
   */
   fun append (array1 : Array(a), array2 : Array(a)) : Array(a) {
     `[].concat(#{array1}).concat(#{array2})`
@@ -314,7 +316,7 @@ module Array {
   /*
   Concatenate a bunch of arrays into a single array:
 
-    Array.Extra.concat([[1,2],[3],[4,5]]) == [1,2,3,4,5]
+    Array.concat([[1,2],[3],[4,5]]) == [1,2,3,4,5]
   */
   fun concat (arrays : Array(Array(a))) : Array(a) {
     reduce([], append, arrays)
@@ -467,19 +469,15 @@ module Array {
     Array.compact([Maybe.just("A"), Maybe.nothing()]) == ["A"]
   */
   fun compact (array : Array(Maybe(a))) : Array(a) {
-    `
-    (() => {
-      const result = []
-
-      for (let item of #{array}) {
-        if (item instanceof Just) {
-          result.push(item.value)
+    Array.reduce(
+      [],
+      (memo : Array(a), item : Maybe(a)) : Array(a) {
+        case (item) {
+          Maybe::Just value => Array.push(value, memo)
+          Maybe::Nothing => memo
         }
-      }
-
-      return result
-    })()
-    `
+      },
+      array)
   }
 
   /*
@@ -663,5 +661,28 @@ module Array {
       return -1
     })()
     `
+  }
+
+  /* Sums up the given array using the given function.
+
+    Array.sumBy((value : Number) : Number { value }, [1, 2, 3]) == 6
+  */
+  fun sumBy (method : Function(a, Number), array : Array(a)) : Number {
+    array
+    |> Array.map(method)
+    |> Array.sum()
+  }
+
+  /* Sums up the given array of numbers.
+
+    Array.sum([1, 2, 3]) == 6
+  */
+  fun sum (array : Array(Number)) : Number {
+    Array.reduce(
+      0,
+      (memo : Number, item : Number) : Number {
+        item + memo
+      },
+      array)
   }
 }

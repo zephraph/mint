@@ -3,6 +3,7 @@ module Mint
     class Server < LSP::Server
       method "initialize", Initialize
       method "textDocument/hover", Hover
+      method "textDocument/didChange", DidChange
       method "textDocument/completion", Completion
       method "shutdown", Shutdown
       method "exit", Exit

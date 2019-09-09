@@ -16,9 +16,9 @@ module Dom {
       let element = document.getElementById(#{id})
 
       if (element) {
-        return new Just(element)
+        return #{Maybe::Just(`element`)}
       } else {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -36,12 +36,12 @@ module Dom {
         let element = document.querySelector(#{selector})
 
         if (element) {
-          return new Just(element)
+          return #{Maybe::Just(`element`)}
         } else {
-          return new Nothing()
+          return #{Maybe::Nothing}
         }
       } catch (error) {
-        return new Nothing()
+        return #{Maybe::Nothing}
       }
     })()
     `
@@ -130,5 +130,38 @@ module Dom {
       }
     })()
     `
+  }
+
+  /*
+  Tries to focus the given element in the next 150 milliseconds and warn
+  in the console if not successful.
+  */
+  fun focusWhenVisible (element : Dom.Element) : Promise(Never, Void) {
+    `
+    (() => {
+      let counter = 0
+
+      let focus = () => {
+        if (counter > 15) {
+          console.warn('Could not focus the element in 150ms. Is it visible?', #{element})
+          return
+        }
+
+        #{element}.focus()
+
+        if (document.activeElement != #{element}) {
+          counter++
+          setTimeout(focus, 10)
+        }
+      }
+
+      focus()
+    })()
+    `
+  }
+
+  /* Returns if the given base element contains the given element. */
+  fun contains (element : Dom.Element, base : Dom.Element) : Bool {
+    `#{base}.contains(#{element})`
   }
 }

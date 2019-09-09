@@ -6,7 +6,7 @@ module Mint
       def execute(server)
         capabilities =
           LSP::ServerCapabilities.new(
-            text_document_sync: 0,
+            text_document_sync: 1,
             hover_provider: true,
             completion_provider: LSP::CompletionOptions.new(
               resolve_provider: true,

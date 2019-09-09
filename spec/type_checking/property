@@ -13,3 +13,12 @@ component Main {
     <div/>
   }
 }
+
+-------------------------------------------------------PropertyWithTypeVariables
+component Main {
+  property name : Test(a) = true
+
+  fun render : Html {
+    <div/>
+  }
+}

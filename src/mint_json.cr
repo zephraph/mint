@@ -185,6 +185,30 @@ module Mint
       }
     end
 
+    # Parsing the icon
+    # --------------------------------------------------------------------------
+
+    json_error MintJsonIconNotString
+    json_error MintJsonIconNotExists
+
+    def parse_icon
+      location =
+        @parser.location
+
+      icon =
+        @parser.read_string
+
+      raise MintJsonIconNotExists, {
+        "node" => node(location),
+      } unless File.exists?(icon)
+
+      icon
+    rescue exception : JSON::ParseException
+      raise MintJsonIconNotString, {
+        "node" => node(exception),
+      }
+    end
+
     # Parsing external javascripts
     # --------------------------------------------------------------------------
     json_error MintJsonExternalJavascriptNotExists
@@ -368,7 +392,7 @@ module Mint
         when "display"
           display = parse_display
         when "icon"
-          icon = @parser.read_string
+          icon = parse_icon
         else
           raise MintJsonApplicationInvalidKey, {
             "node" => current_node,

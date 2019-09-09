@@ -60,12 +60,49 @@ module Number {
     `
     (() => {
       let value = parseFloat(#{input})
+
       if (isNaN(value)) {
-        return new Nothing()
+        return #{Maybe::Nothing}
       } else {
-        return new Just(value)
+        return #{Maybe::Just(`value`)}
       }
     })()
     `
+  }
+
+  /*
+  Formats the given number using the griven prefix and separating the digits
+  by 3 with a comma.
+
+    Number.format("$ ", 1034150) == "$ 1,034,150"
+  */
+  fun format  (prefix : String, number : Number) : String {
+    try {
+      string =
+        Number.toFixed(2, number)
+
+      parts =
+        String.split(".", string)
+
+      digits =
+        parts[0]
+        |> Maybe.withDefault("")
+        |> String.lchop("-")
+        |> String.split("")
+        |> Array.groupsOfFromEnd(3)
+        |> Array.map(String.join(""))
+        |> String.join(",")
+
+      decimals =
+        parts[1]
+        |> Maybe.withDefault("")
+        |> String.rchop("0")
+
+      if (String.isEmpty(decimals)) {
+        prefix + digits
+      } else {
+        prefix + digits + "." + decimals
+      }
+    }
   }
 }

@@ -6,7 +6,7 @@ shards:
 
   ameba:
     github: veelenga/ameba
-    version: 0.9.1
+    version: 0.10.0
 
   baked_file_system:
     github: schovi/baked_file_system
@@ -18,7 +18,7 @@ shards:
 
   dotenv:
     github: gdotdesign/cr-dotenv
-    version: 0.2.0
+    version: 0.3.0
 
   exception_page:
     github: crystal-loot/exception_page
@@ -31,6 +31,10 @@ shards:
   kilt:
     github: jeromegn/kilt
     version: 0.4.0
+
+  markd:
+    github: icyleaf/markd
+    version: 0.1.2
 
   radix:
     github: luislavena/radix

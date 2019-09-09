@@ -1,18 +1,6 @@
 module Mint
   # Renders the main HTML file based on a mint.json file and an enviroment.
   class IndexHtml
-    GLOBAL_STYLES =
-      <<-CSS
-      body {
-        overflow-y: scroll;
-        margin: 0;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-      CSS
-
     getter json, env
 
     def self.render(env, relative = false, no_service_worker = false)
@@ -53,22 +41,21 @@ module Mint
             # Insert the extra head content
             t.unsafe json.application.head
 
-            ICON_SIZES.each do |size|
-              t.link(
-                rel: "icon",
-                type: "image/png",
-                href: path_for("icon-#{size}x#{size}.png"),
-                sizes: "#{size}x#{size}")
-            end
+            unless json.application.icon.empty?
+              ICON_SIZES.each do |size|
+                t.link(
+                  rel: "icon",
+                  type: "image/png",
+                  href: path_for("icon-#{size}x#{size}.png"),
+                  sizes: "#{size}x#{size}")
+              end
 
-            [152, 167, 180].each do |size|
-              t.link(
-                rel: "apple-touch-icon-precomposed",
-                href: path_for("icon-#{size}x#{size}.png"))
+              [152, 167, 180].each do |size|
+                t.link(
+                  rel: "apple-touch-icon-precomposed",
+                  href: path_for("icon-#{size}x#{size}.png"))
+              end
             end
-
-            # Insert global styles
-            t.style(GLOBAL_STYLES)
           end
 
           t.body do
