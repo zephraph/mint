@@ -186,7 +186,6 @@ module Mint
       check!
       @error = nil
     rescue error : Error
-      puts error
       @error = error
     end
 

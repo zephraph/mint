@@ -1,7 +1,7 @@
 require "../spec_helper"
 
-describe "Language Server - Hover" do
-  it "returns information about HTML elements" do
+describe "Language Server - DidChange" do
+  it "there should be no error" do
     with_workspace do |workspace|
       workspace.file "test.mint", <<-MINT
       component Test {
@@ -19,7 +19,7 @@ describe "Language Server - Hover" do
         }
       )
 
-      workspace.workspace.error.should eq(nil)
+      workspace.workspace.error.should_not eq(nil)
     end
   end
 end

@@ -38,15 +38,15 @@ module Mint
 
         contents =
           if error = workspace.error
-            "Cannot provide hover data because, there is an error with your project."
+            "Cannot provide hover data because, there is an error with your project #{error}"
           else
             result = server.nodes_at_cursor(params)
 
             node = result[0]?
             parent = result[1]?
 
-            server.log(node.class.to_s)
-            server.log(parent.class.to_s)
+            # server.log(node.class.to_s)
+            # server.log(parent.class.to_s)
 
             case parent
             when Ast::Function
