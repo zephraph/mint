@@ -21,7 +21,8 @@ module Mint
             whitespace
             skip unless keyword "using"
             whitespace
-            string_literal! RecordDefinitionFieldExpectedMapping
+            string_literal! RecordDefinitionFieldExpectedMapping,
+              with_interpolation: false
           end
 
         self << Ast::RecordDefinitionField.new(

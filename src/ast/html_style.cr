@@ -1,9 +1,10 @@
 module Mint
   class Ast
-    class CssInterpolation < Node
-      getter expression
+    class HtmlStyle < Node
+      getter name, arguments
 
-      def initialize(@expression : Expression,
+      def initialize(@arguments : Array(Expression),
+                     @name : Variable,
                      @input : Data,
                      @from : Int32,
                      @to : Int32)

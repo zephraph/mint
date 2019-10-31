@@ -5,9 +5,9 @@ module Mint
         node.value.map do |item|
           case item
           when Ast::Node
-            "\#{#{format(item)}}"
+            format(item)
           else
-            format(item).gsub(/`/, "\\`")
+            format(item).gsub('`', "\\`")
           end
         end.join("")
 
