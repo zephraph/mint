@@ -13,7 +13,7 @@ module Mint
           value =
             compile definition.value
 
-          memo["[`#{variable}`]"] = "`#{value}`"
+          memo["[`#{variable}`]"] = value
         end
 
       "Object.assign(_, #{js.object(compiled)})"
@@ -46,6 +46,8 @@ module Mint
         case item = falsy_item
         when Array(Ast::CssDefinition)
           _compile item, block: block
+        when Ast::If
+          compile item, block: block
         when Ast::Node
           compile item
         else

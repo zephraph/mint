@@ -1,9 +1,9 @@
 module Mint
-  # Reactor is the development server of Mint, it have the following features:
-  # * Servers the compiled application script, index file and favicons
-  # * Watches all source files (application and packages as well) and if any
+  # Reactor is the development server of Mint, it has the following features:
+  # * Serve the compiled application script, index file, and favicons
+  # * Watch all source files (application and packages as well) and if any
   #   changed it removes its AST from the cache, parses it
-  #   again and then recompiles the application script
+  #   again and then recompile the application script
   # * Renders any error as HTML
   # * Keeps a cache of ASTs of the parsed files for faster recompilation
   # * When --auto-format flag is passed all source files are watched and if
@@ -41,7 +41,7 @@ module Mint
       watch_for_changes
       setup_kemal
 
-      Server.run "Development", @host, @port
+      Server.run "Development", @host, @port, @host, @port
     end
 
     def init(workspace)
@@ -125,13 +125,24 @@ module Mint
         script
       end
 
+      get "/external-javascripts.js" do |env|
+        env.response.content_type = "application/javascript"
+
+        @watcher.external_javascripts.to_s
+      end
+
+      get "/external-stylesheets.css" do |env|
+        env.response.content_type = "text/css"
+
+        @watcher.external_stylesheets.to_s
+      end
+
       get "/:name" do |env|
         # Set cache to expire in 30 days.
         env.response.headers["Cache-Control"] = "max-age=2592000"
 
-        # Try to figure out mime type form name in case it's baked or served
-        # from public. Later on for favicon and fallback the content_type is
-        # overriden.
+        # Try to figure out mime type from name in case it's baked or served
+        # from public. Later on favicon and fallback content_type is overridden.
         env.response.content_type =
           MIME.from_filename?(env.params.url["name"]).to_s
 
@@ -172,7 +183,7 @@ module Mint
         halt env, response: index, status_code: 200
       end
 
-      # On websocket connections save the socket for notificaitons.
+      # On websocket connections save the socket for notifications.
       ws "/" do |socket|
         @sockets.push socket
 
@@ -182,7 +193,7 @@ module Mint
       end
     end
 
-    # Notifies all connected scokets to reload the page.
+    # Notifies all connected sockets to reload the page.
     def notify
       @sockets.each do |socket|
         socket.send("reload")

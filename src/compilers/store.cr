@@ -13,8 +13,11 @@ module Mint
       constructor =
         compile_constructor node
 
+      constants =
+        compile node.constants
+
       body =
-        [constructor] + states + gets + functions
+        [constructor] + states + gets + functions + constants
 
       name =
         js.class_of(node)
@@ -26,7 +29,7 @@ module Mint
       states =
         node
           .states
-          .select { |state| checked.includes?(state) }
+          .select(&.in?(checked))
           .each_with_object({} of String => String) do |state, memo|
             name =
               js.variable_of(state)

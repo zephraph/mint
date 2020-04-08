@@ -4,6 +4,16 @@ module Mint
       name =
         js.class_of(node)
 
+      prefixed_name =
+        if node.global
+          "$" + name
+        else
+          name
+        end
+
+      global_let =
+        "let #{name}" if node.global
+
       compile node.styles, node
 
       styles =
@@ -14,6 +24,9 @@ module Mint
       functions =
         compile_component_functions node
 
+      constants =
+        compile node.constants
+
       gets =
         compile node.gets
 
@@ -21,7 +34,7 @@ module Mint
         compile node.states
 
       display_name =
-        js.display_name(name, node.name)
+        js.display_name(prefixed_name, node.name)
 
       store_stuff =
         compile_component_store_data node
@@ -37,12 +50,17 @@ module Mint
               "null"
             end
 
-          memo[js.variable_of(prop)] = js.array([prop_name, compile prop.default])
+          value =
+            prop.default.try do |item|
+              compile item
+            end || "null"
+
+          memo[js.variable_of(prop)] = js.array([prop_name, value])
         end
 
-      constructor_body << js.call("this._d", [js.object(default_props)]) if default_props.any?
+      constructor_body << js.call("this._d", [js.object(default_props)]) unless default_props.empty?
 
-      if node.states.any?
+      unless node.states.empty?
         values =
           node
             .states
@@ -54,7 +72,7 @@ module Mint
       end
 
       constructor =
-        if constructor_body.any?
+        unless constructor_body.empty?
           js.function("constructor", ["props"]) do
             constructor_body.unshift js.call("super", ["props"])
 
@@ -62,14 +80,17 @@ module Mint
           end
         end
 
+      functions << js.function("_persist", [] of String, js.assign(name, "this")) if node.global
+
       body =
-        ([constructor] + styles + gets + states + store_stuff + functions)
+        ([constructor] + styles + gets + constants + states + store_stuff + functions)
           .compact
 
       js.statements([
-        js.class(name, extends: "_C", body: body),
+        js.class(prefixed_name, extends: "_C", body: body),
         display_name,
-      ])
+        global_let,
+      ].compact)
     end
 
     def compile_component_store_data(node : Ast::Component) : Array(String)
@@ -85,11 +106,12 @@ module Mint
             id = js.variable_of(lookups[key])
             name = js.variable_of(key)
 
-            if store.states.find(&.name.value.==(original))
+            case
+            when store.constants.any? { |constant| constant.name == original },
+                 store.gets.any? { |get| get.name.value == original },
+                 store.states.find(&.name.value.==(original))
               memo << js.get(name, "return #{store_name}.#{id};")
-            elsif store.gets.any? { |get| get.name.value == original }
-              memo << js.get(name, "return #{store_name}.#{id};")
-            elsif store.functions.any? { |func| func.name.value == original }
+            when store.functions.any? { |func| func.name.value == original }
               memo << "#{name} (...params) { return #{store_name}.#{id}(...params); }"
             end
           end
@@ -157,7 +179,7 @@ module Mint
             function.keep_name = true
 
             compile function, js.statements(value)
-          elsif value.any?
+          elsif !value.empty?
             js.function(key, [] of String, js.statements(value))
           end
         end

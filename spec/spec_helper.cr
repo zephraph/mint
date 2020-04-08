@@ -8,7 +8,7 @@ class Mint::Error < Exception
   macro inherited
     name = {{@type.name.stringify.split("::").last.underscore}}
 
-    unless ["type_error", "install_error", "syntax_error", "json_error"].includes?(name)
+    unless name.in?("type_error", "install_error", "syntax_error", "json_error")
       ERROR_MESSAGES << name
     end
   end
@@ -47,7 +47,7 @@ class Mint::Installer::Repository
 
   def run(command, chdir = directory)
     content =
-      case command.split(" ")[1]
+      case command.split(' ')[1]
       when "tag"
         "0.1.0\n0.2.0"
       when "fetch"

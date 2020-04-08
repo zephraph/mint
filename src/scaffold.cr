@@ -54,7 +54,7 @@ module Mint
     end
 
     def run
-      terminal.print "#{COG} Creating directory structure...\n"
+      terminal.puts "#{COG} Creating directory structure..."
       source_file_name = "source"
       tests_file_name = "tests"
 

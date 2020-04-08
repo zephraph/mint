@@ -3,7 +3,6 @@ module Mint
     # Built in types
     # ----------------------------------------------------------------------------
 
-    JS             = Js.new
     STRING         = Type.new("String")
     BOOL           = Type.new("Bool")
     NUMBER         = Type.new("Number")
@@ -30,7 +29,7 @@ module Mint
     property checking : Bool = true
 
     delegate checked, record_field_lookup, component_records, to: artifacts
-    delegate types, variables, ast, lookups, cache, to: artifacts
+    delegate types, variables, ast, lookups, cache, resolve_order, to: artifacts
     delegate component?, component, stateful?, to: scope
     delegate format, to: formatter
 
@@ -55,6 +54,26 @@ module Mint
       puts Debugger.new(@scope).run
     end
 
+    def print_stack
+      @stack.each_with_index do |i, index|
+        x = case i
+            when Ast::Component then i.name
+            when Ast::Function  then i.name.value
+            when Ast::With      then "<with>"
+            when Ast::Try       then "<try>"
+            when Ast::Call      then "<call>"
+            else
+              i
+            end
+
+        if index == 0
+          puts x
+        else
+          puts "#{" " * (index - 1)} ↳ #{x}"
+        end
+      end
+    end
+
     # Helpers for resolving records, types and record definitions
     # --------------------------------------------------------------------------
 
@@ -76,9 +95,9 @@ module Mint
         (@record_name_char = @record_name_char.succ)
 
       compiled_fields =
-        fields.map do |key, value|
+        fields.join(",\n") do |key, value|
           "#{key} : #{value.to_mint}"
-        end.join(",\n").indent
+        end.indent
 
       contents =
         <<-MINT
@@ -139,14 +158,6 @@ module Mint
         "node"   => node,
       } if record.have_holes?
 
-      other = records.find(&.==(record))
-
-      raise RecordFieldsConflict, {
-        "other" => @record_names[other.name],
-        "name"  => record.name,
-        "node"  => node,
-      } if other && other.name != record.name
-
       other = @record_names[record.name]?
 
       if other && node != other
@@ -180,8 +191,7 @@ module Mint
       end
     end
 
-    def scope(nodes : Array(Tuple(String, Checkable, Ast::Node)))
-      # There is no recursive call check because these are just variables...
+    def scope(nodes)
       scope.with nodes do
         yield
       end
@@ -218,10 +228,21 @@ module Mint
       when Ast::Node
         cache[node]? || begin
           if @stack.includes?(node)
-            if node.is_a?(Ast::Component)
+            case node
+            when Ast::Component
+              # ameba:disable Style/RedundantReturn
               return NEVER.as(Checkable)
-            elsif node.is_a?(Ast::Function)
+            when Ast::Function, Ast::InlineFunction
               static_type_signature(node)
+            when Ast::WhereStatement, Ast::Statement
+              expression =
+                node.expression
+
+              if expression.is_a?(Ast::InlineFunction)
+                static_type_signature(expression)
+              else
+                resolve expression
+              end
             else
               raise Recursion, {
                 "caller_node" => @stack.last,
@@ -234,6 +255,7 @@ module Mint
             result = check(node, *args).as(Checkable)
 
             cache[node] = result
+            resolve_order << node
 
             check! node
 

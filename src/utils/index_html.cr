@@ -1,13 +1,13 @@
 module Mint
-  # Renders the main HTML file based on a mint.json file and an enviroment.
+  # Renders the main HTML file based on a mint.json file and an environment.
   class IndexHtml
     getter json, env
 
-    def self.render(env, relative = false, no_service_worker = false)
-      new(env, relative, no_service_worker).to_s
+    def self.render(env, relative = false, no_service_worker = false, no_icons = false)
+      new(env, relative, no_service_worker, no_icons).to_s
     end
 
-    def initialize(@env : Environment, @relative : Bool, @no_service_worker : Bool)
+    def initialize(@env : Environment, @relative : Bool, @no_service_worker : Bool, @no_icons : Bool)
       @json = MintJson.parse_current
     end
 
@@ -19,8 +19,8 @@ module Mint
       end
     end
 
-    def to_s
-      TreeTemplate.new(formatter: TreeTemplate::PrettyFormatter) do |t|
+    def to_s(io : IO)
+      template = TreeTemplate.new(formatter: TreeTemplate::PrettyFormatter) do |t|
         t.doctype :html5
 
         t.html do
@@ -41,7 +41,7 @@ module Mint
             # Insert the extra head content
             t.unsafe json.application.head
 
-            unless json.application.icon.empty?
+            if !json.application.icon.empty? || !@no_icons
               ICON_SIZES.each do |size|
                 t.link(
                   rel: "icon",
@@ -55,6 +55,12 @@ module Mint
                   rel: "apple-touch-icon-precomposed",
                   href: path_for("icon-#{size}x#{size}.png"))
               end
+            end
+
+            if SourceFiles.external_stylesheets?
+              t.link(
+                rel: "stylesheet",
+                href: "/external-stylesheets.css")
             end
           end
 
@@ -78,6 +84,10 @@ module Mint
               end
             end
 
+            if SourceFiles.external_javascripts?
+              t.script(src: path_for("external-javascripts.js")) { }
+            end
+
             t.script(src: path_for("index.js")) { }
 
             t.noscript do
@@ -85,7 +95,8 @@ module Mint
             end
           end
         end
-      end.render
+      end
+      io << template.render
     end
   end
 end

@@ -14,9 +14,33 @@ component Main {
   }
 }
 
--------------------------------------------------------PropertyWithTypeVariables
+------------------------------------------------------------PropertyTypeMismatch
 component Main {
   property name : Test(a) = true
+
+  fun render : Html {
+    <div/>
+  }
+}
+-------------------------------------------------------PropertyWithTypeVariables
+component Main {
+  property name = []
+
+  fun render : Html {
+    <div/>
+  }
+}
+------------------------------------------------------------PropertyTypeMismatch
+component Main {
+  property name : Test = { a = "Hello" }
+
+  fun render : Html {
+    <div/>
+  }
+}
+-----------------------------------------------------PropertyTypeOrDefaultNeeded
+component Main {
+  property name
 
   fun render : Html {
     <div/>

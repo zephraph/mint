@@ -4,12 +4,15 @@ require "tree_template"
 require "time_format"
 require "file_utils"
 require "colorize"
-# require "marked"
+require "markd"
 require "kemal"
+require "uuid"
 require "html"
 require "json"
 
 MINT_ENV = {} of String => String
+
+require "./version"
 
 require "./ext/**"
 
@@ -49,7 +52,8 @@ require "./installer"
 require "./parsers/**"
 require "./parser"
 
-require "./documentation_server/**"
+require "./documentation_generator/**"
+require "./documentation_generator"
 require "./documentation_server"
 
 require "./test_runner/**"

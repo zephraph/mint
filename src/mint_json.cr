@@ -17,9 +17,12 @@ module Mint
     @dependencies = [] of Mint::Installer::Dependency
     @formatter_config = Formatter::Config.new
     @parser = JSON::PullParser.new("{}")
-    @external_javascripts = [] of String
     @source_directories = [] of String
     @test_directories = [] of String
+    @external_files = {
+      "javascripts" => [] of String,
+      "stylesheets" => [] of String,
+    }
     @application = Application.new
     @name = ""
 
@@ -27,7 +30,7 @@ module Mint
     json_error MintJsonRootInvalidKey
 
     getter test_directories, source_directories, dependencies, application
-    getter external_javascripts, name, root, formatter_config
+    getter external_files, name, root, formatter_config
 
     def self.from_file(path)
       new File.read(path), File.dirname(path), path
@@ -111,8 +114,6 @@ module Mint
         case key
         when "name"
           parse_name
-        when "external-javascripts"
-          parse_external_javascripts
         when "source-directories"
           parse_source_directories
         when "test-directories"
@@ -123,6 +124,8 @@ module Mint
           parse_dependencies
         when "formatter"
           parse_formatter
+        when "external"
+          parse_external_assets
         else
           raise MintJsonRootInvalidKey, {
             "node" => current_node,
@@ -209,11 +212,28 @@ module Mint
       }
     end
 
-    # Parsing external javascripts
+    # Parsing external assets (JavaScripts, CSS)
     # --------------------------------------------------------------------------
-    json_error MintJsonExternalJavascriptNotExists
+
+    json_error MintJsonExternalInvalid
+
+    def parse_external_assets
+      @parser.read_object do |key|
+        case key
+        when "javascripts"
+          parse_external_javascripts
+        when "stylesheets"
+          parse_external_style_sheets
+        else
+          raise MintJsonExternalInvalid, {
+            "node" => current_node,
+            "key"  => key,
+          }
+        end
+      end
+    end
+
     json_error MintJsonExternalJavascriptsInvalid
-    json_error MintJsonExternalJavascriptInvalid
 
     def parse_external_javascripts
       @parser.read_array { parse_external_javascript }
@@ -222,6 +242,9 @@ module Mint
         "node" => node(exception),
       }
     end
+
+    json_error MintJsonExternalJavascriptNotExists
+    json_error MintJsonExternalJavascriptInvalid
 
     def parse_external_javascript
       location =
@@ -238,9 +261,44 @@ module Mint
         "path" => path,
       } if !File.exists?(path) || Dir.exists?(path)
 
-      @external_javascripts << path
+      @external_files["javascripts"] << path
     rescue exception : JSON::ParseException
       raise MintJsonExternalJavascriptInvalid, {
+        "node" => node(exception),
+      }
+    end
+
+    json_error MintJsonExternalStylesheetsInvalid
+
+    def parse_external_style_sheets
+      @parser.read_array { parse_external_style_sheet }
+    rescue exception : JSON::ParseException
+      raise MintJsonExternalStylesheetsInvalid, {
+        "node" => node(exception),
+      }
+    end
+
+    json_error MintJsonExternalStylesheetNotExists
+    json_error MintJsonExternalStylesheetInvalid
+
+    def parse_external_style_sheet
+      location =
+        @parser.location
+
+      file =
+        @parser.read_string
+
+      path =
+        File.join(@root, file)
+
+      raise MintJsonExternalStylesheetNotExists, {
+        "node" => node(location),
+        "path" => path,
+      } if !File.exists?(path) || Dir.exists?(path)
+
+      @external_files["stylesheets"] << file
+    rescue exception : JSON::ParseException
+      raise MintJsonExternalStylesheetInvalid, {
         "node" => node(exception),
       }
     end
@@ -455,7 +513,7 @@ module Mint
         keywords << parse_keyword
       end
 
-      keywords.join(",")
+      keywords.join(',')
     rescue exception : JSON::ParseException
       raise MintJsonKeywordsInvalid, {
         "node" => node(exception),
@@ -587,8 +645,8 @@ module Mint
         end
       end
 
-      raise "Should not happend" unless repository
-      raise "Should not happend" unless constraint
+      raise "Should not happen" unless repository
+      raise "Should not happen" unless constraint
 
       Mint::Installer::Dependency.new key, repository, constraint
     rescue exception : JSON::ParseException

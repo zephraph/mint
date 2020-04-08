@@ -39,9 +39,10 @@ enum Http.Error {
 Module for sending HTTP requests.
 
 ```
-do {
+sequence {
   response =
-    Http.get("https://httpbin.org/get")
+    "https://httpbin.org/get"
+    |> Http.get()
     |> Http.send()
 
   Debug.log(response)
@@ -133,7 +134,8 @@ module Http {
   /*
   Sets the body of the request to the given string
 
-    Http.post("https://httpbin.org/anything")
+    "https://httpbin.org/anything"
+    |> Http.post()
     |> Http.stringBody("Some string that will come back.")
     |> Http.send()
   */
@@ -144,7 +146,8 @@ module Http {
   /*
   Sets the body of the request to the given object encoded to JSON
 
-    Http.post("https://httpbin.org/anything")
+    "https://httpbin.org/anything"
+    |> Http.post()
     |> Http.jsonBody(encode { name = "John" })
     |> Http.send()
   */
@@ -159,7 +162,8 @@ module Http {
       FormData.empty()
       |> FormData.addString("key", "value")
 
-    Http.post("https://httpbin.org/anything")
+    "https://httpbin.org/anything"
+    |> Http.post()
     |> Http.formDataBody(formData)
     |> Http.send()
   */
@@ -226,6 +230,7 @@ module Http {
     `
   }
 
+  /* Returns all running requuests. */
   fun requests : Map(String, Http.NativeRequest) {
     `this._requests`
   }
@@ -233,7 +238,8 @@ module Http {
   /*
   Sends the request with a generated unique id.
 
-    Http.get("https://httpbin.org/get")
+    "https://httpbin.org/get"
+    |> Http.get()
     |> Http.send()
   */
   fun send (request : Http.Request) : Promise(Http.ErrorResponse, Http.Response) {
@@ -243,7 +249,8 @@ module Http {
   /*
   Sends the request with the given ID so it could be aborted later.
 
-    Http.get("https://httpbin.org/get")
+    "https://httpbin.org/get"
+    |> Http.get()
     |> Http.sendWithID("my-request")
   */
   fun sendWithID (uid : String, request : Http.Request) : Promise(Http.ErrorResponse, Http.Response) {
@@ -262,13 +269,11 @@ module Http {
       } catch (error) {
         delete this._requests[#{uid}]
 
-        reject(#{
-          {
-            type = Http.Error::BadUrl,
-            status = `xhr.status`,
-            url = request.url
-          }
-        })
+        reject(#{{
+          type = Http.Error::BadUrl,
+          status = `xhr.status`,
+          url = request.url
+        }})
       }
 
       #{request.headers}.forEach((item) => {
@@ -278,48 +283,40 @@ module Http {
       xhr.addEventListener('error', (event) => {
         delete this._requests[#{uid}]
 
-        reject(#{
-          {
-            type = Http.Error::NetworkError,
-            status = `xhr.status`,
-            url = request.url
-          }
-        })
+        reject(#{{
+          type = Http.Error::NetworkError,
+          status = `xhr.status`,
+          url = request.url
+        }})
       })
 
       xhr.addEventListener('timeout', (event) => {
         delete this._requests[#{uid}]
 
-        reject(#{
-          {
-            type = Http.Error::Timeout,
-            status = `xhr.status`,
-            url = request.url
-          }
-        })
+        reject(#{{
+          type = Http.Error::Timeout,
+          status = `xhr.status`,
+          url = request.url
+        }})
       })
 
       xhr.addEventListener('load', (event) => {
         delete this._requests[#{uid}]
 
-        resolve(#{
-          {
-            body = `xhr.responseText`,
-            status = `xhr.status`
-          }
-        })
+        resolve(#{{
+          body = `xhr.responseText`,
+          status = `xhr.status`
+        }})
       })
 
       xhr.addEventListener('abort', (event) => {
         delete this._requests[#{uid}]
 
-        reject(#{
-          {
-            type = Http.Error::Aborted,
-            status = `xhr.status`,
-            url = request.url
-          }
-        })
+        reject(#{{
+          type = Http.Error::Aborted,
+          status = `xhr.status`,
+          url = request.url
+        }})
       })
 
       xhr.send(#{request.body})

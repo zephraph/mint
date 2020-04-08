@@ -7,7 +7,10 @@ module Mint
       entity =
         ast.modules.find(&.name.==(node.name)) ||
           ast.stores.find(&.name.==(node.name)) ||
-          ast.providers.find(&.name.==(node.name))
+          ast.providers.find(&.name.==(node.name)) ||
+          ast.components
+            .select(&.global)
+            .find(&.name.==(node.name))
 
       item =
         case entity
@@ -31,11 +34,19 @@ module Mint
             entity.functions.find(&.name.value.==(node.variable.value))
           end
         when Ast::Module
-          entity.functions.find(&.name.value.==(node.variable.value))
+          entity.functions.find(&.name.value.==(node.variable.value)) ||
+            entity.constants.find(&.name.==(node.variable.value))
+        when Ast::Component
+          entity.properties.find(&.name.value.==(node.variable.value)) ||
+            entity.functions.find(&.name.value.==(node.variable.value)) ||
+            entity.states.find(&.name.value.==(node.variable.value)) ||
+            entity.constants.find(&.name.==(node.variable.value)) ||
+            entity.gets.find(&.name.value.==(node.variable.value))
         when Ast::Store
           entity.functions.find(&.name.value.==(node.variable.value)) ||
             entity.states.find(&.name.value.==(node.variable.value)) ||
-            entity.gets.find(&.name.value.==(node.variable.value))
+            entity.gets.find(&.name.value.==(node.variable.value)) ||
+            entity.constants.find(&.name.==(node.variable.value))
         else
           raise ModuleAccessNotFoundModule, {
             "name" => node.name,
@@ -54,7 +65,9 @@ module Mint
 
       check!(entity)
 
-      resolve item
+      scope entity do
+        resolve item
+      end
     end
   end
 end

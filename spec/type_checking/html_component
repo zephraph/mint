@@ -15,3 +15,29 @@ component Main {
     <X/>
   }
 }
+----------------------------------------------------HtmlComponentGlobalComponent
+global component X {
+  fun render : Html {
+    <div></div>
+  }
+}
+
+component Main {
+  fun render : Html {
+    <X/>
+  }
+}
+--------------------------------------------------HtmlComponentAttributeRequired
+component Test {
+  property name : String
+
+  fun render : Html {
+    <div/>
+  }
+}
+
+component Main {
+  fun render : Html {
+    <Test/>
+  }
+}

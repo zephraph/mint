@@ -1,3 +1,5 @@
+# TODO: Refactor this file into a different class because it should not be
+# in the compiler.
 module Mint
   class Compiler
     DEFAULT_OPTIONS = {optimize: false}
@@ -12,7 +14,55 @@ module Mint
 
       main =
         compiler.ast.components.find(&.name.==("Main")).try do |component|
-          "\n_program.render(#{compiler.js.class_of(component)})"
+          globals =
+            compiler
+              .ast
+              .components
+              .select(&.global)
+              .each_with_object({} of String => String) do |item, memo|
+                name =
+                  compiler.js.class_of(item)
+
+                memo[name] = "$#{name}"
+              end
+
+          main_class =
+            compiler.js.class_of(component)
+
+          globals_object =
+            compiler.js.object(globals)
+
+          "\n_program.render(#{main_class}, #{globals_object})"
+        end || ""
+
+      compiler.wrap_runtime(compiler.compile, main)
+    end
+
+    def self.compile_embed(artifacts : TypeChecker::Artifacts, options = DEFAULT_OPTIONS) : String
+      compiler =
+        new(artifacts, options[:optimize])
+
+      main =
+        compiler.ast.components.find(&.name.==("Main")).try do |component|
+          globals =
+            compiler
+              .ast
+              .components
+              .select(&.global)
+              .each_with_object({} of String => String) do |item, memo|
+                name =
+                  compiler.js.class_of(item)
+
+                memo[name] = "$#{name}"
+              end
+
+          main_class =
+            compiler.js.class_of(component)
+
+          globals_object =
+            compiler.js.object(globals)
+
+          "\n Mint.embed = (base) => (new mint.EmbeddedProgram(base)).render(#{main_class}, #{globals_object})"
         end || ""
 
       compiler.wrap_runtime(compiler.compile, main)
@@ -29,25 +79,11 @@ module Mint
       compiler =
         new(artifacts)
 
-      base =
-        compiler.compile
-
-      tests =
-        compiler.compile_tests
-
-      compiler.wrap_runtime(base + "\n\n" + tests)
-    end
-
-    # Compiles the tests
-    def compile_tests
-      suites =
-        compile ast.suites, ","
-
-      "SUITES = [#{suites}]"
+      compiler.wrap_runtime(compiler.compile(include_tests: true))
     end
 
     # Compiles the application
-    def compile : String
+    def compile(include_tests : Bool = false) : String
       records =
         compile ast.records
 
@@ -79,8 +115,20 @@ module Mint
           "_insertStyles(`\n#{all_css}\n`)"
         end
 
+      suites =
+        if include_tests
+          ["SUITES = [#{compile(ast.suites, ",")}]"]
+        else
+          [] of String
+        end
+
+      static =
+        static_components.map do |name, compiled|
+          js.const("$#{name}", "_m(() => #{compiled})")
+        end
+
       elements =
-        enums + records + providers + routes + modules + components + stores + [footer]
+        (enums + records + providers + routes + modules + components + static + stores + [footer] + suites)
           .reject(&.empty?)
 
       js.statements(elements)
@@ -130,12 +178,6 @@ module Mint
 
     # Wraps the application with the runtime
     def wrap_runtime(body, main = "")
-      javascripts =
-        SourceFiles
-          .javascripts
-          .map { |file| File.read(file) }
-          .join("\n\n")
-
       html_event_module =
         ast.modules.find(&.name.==("Html.Event")).not_nil!
 
@@ -146,8 +188,6 @@ module Mint
         js.class_of(html_event_module) + "." + js.variable_of(from_event)
 
       <<-RESULT
-      #{javascripts}
-
       (() => {
         const _enums = {}
         const mint = Mint(_enums)
@@ -182,6 +222,15 @@ module Mint
         const _M = mint.Module;
         const _S = mint.Store;
         const _E = mint.Enum;
+
+        const _m = (method) => {
+          let value;
+          return () => {
+            if (value) { return value }
+            value = method()
+            return value
+          }
+        }
 
         const _s = (item, callback) => {
           if (item instanceof #{nothing}) {

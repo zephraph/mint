@@ -1,6 +1,6 @@
 require "./spec_helper"
 
-Dir.glob("./spec/type_checking/**").sort.each do |file|
+Dir.glob("./spec/type_checking/**/*").sort.each do |file|
   # Read samples
   samples = [] of Tuple(String, String | Nil)
   contents = File.read(file)
@@ -37,6 +37,10 @@ Dir.glob("./spec/type_checking/**").sort.each do |file|
         end
 
         item.should be_a(Mint::Error)
+
+        # Check if they are rendered correctly.
+        item.try(&.to_terminal)
+        item.try(&.to_html)
       else
         ast = Mint::Parser.parse(source, file)
         ast.class.should eq(Mint::Ast)

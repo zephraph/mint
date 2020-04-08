@@ -64,7 +64,7 @@ module Mint
     end
 
     def generate
-      Dir.cd "dist"
+      Dir.cd DIST_DIR
 
       head =
         <<-JS
@@ -75,15 +75,14 @@ module Mint
 
       Dir.cd ".."
 
-      [head, SOURCE].join("\n\n")
+      {head, SOURCE}.join("\n\n")
     end
 
     def files
       Dir
         .glob("**/*")
         .reject { |file| File.directory?(file) }
-        .map { |file| "'/#{file}'" }
-        .join(",\n")
+        .join(",\n") { |file| "'/#{file}'" }
     end
 
     def calculate_hash
@@ -91,8 +90,8 @@ module Mint
         .glob("**/*")
         .reject { |file| File.directory?(file) }
         .reduce(OpenSSL::Digest.new("SHA256")) do |digest, file|
-        digest.update File.read(file)
-      end.to_s
+          digest.update File.read(file)
+        end.to_s
     end
   end
 end

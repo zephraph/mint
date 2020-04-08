@@ -45,7 +45,7 @@ module Mint
     # Helpers for raising errors
     # ----------------------------------------------------------------------------
 
-    def raise(error : SyntaxError.class, position : Int32)
+    def raise(error : SyntaxError.class, position : Int32, raw : Hash(String, T)) forall T
       to =
         input[position, input.size]
           .split(/\s|\n|\r/)
@@ -64,11 +64,15 @@ module Mint
       raise error, {
         "node" => node,
         "got"  => part,
-      }
+      }.merge(raw)
+    end
+
+    def raise(error : SyntaxError.class, position : Int32)
+      raise error, position, {} of String => String
     end
 
     def raise(error : SyntaxError.class)
-      raise error, position
+      raise error, position, {} of String => String
     end
 
     def raise(error : SkipError.class)
@@ -189,7 +193,7 @@ module Mint
       type || type_variable
     end
 
-    def type_or_type_variable!(error : SyntaxError.class)
+    def type_or_type_variable!(error : SyntaxError.class | SkipError.class)
       raise error unless result = type_or_type_variable
       result
     end
@@ -214,7 +218,7 @@ module Mint
       result
     end
 
-    def list(terminator : Char, separator : Char, &block : -> T) : Array(T) forall T
+    def list(terminator : Char | Nil, separator : Char, &block : -> T) : Array(T) forall T
       result = [] of T
 
       loop do
@@ -226,6 +230,9 @@ module Mint
 
         # Add item to results
         result << item
+
+        # Consume whitespace before the separator
+        whitespace
 
         # Break if there is no separator, consume it otherwise
         break unless char! separator

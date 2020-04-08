@@ -96,7 +96,7 @@ module Regexp {
   }
 
   /*
-  Returns all of the matches of the given regular expession agains the
+  Returns all of the matches of the given regular expession against the
   given string.
 
     (Regexp.createWithOptions(
@@ -135,13 +135,11 @@ module Regexp {
 
         index += 1
 
-        results.push(#{
-          {
-            submatches = `submatches`,
-            index = `index`,
-            match = `match`
-          }
-        })
+        results.push(#{{
+          submatches = `submatches`,
+          index = `index`,
+          match = `match`
+        }})
       })
 
       return results
@@ -151,7 +149,7 @@ module Regexp {
 
   /*
   Replaces the matches of the given regular expression using the given function
-  to caluclate the replacement string.
+  to calculate the replacement string.
 
     (Regexp.createWithOptions(
       "\\w",
@@ -187,13 +185,11 @@ module Regexp {
 
         index += 1
 
-        return #{replacer}(#{
-          {
-            submatches = `submatches`,
-            index = `index`,
-            match = `match`
-          }
-        })
+        return #{replacer}(#{{
+          submatches = `submatches`,
+          index = `index`,
+          match = `match`
+        }})
       })
     })()
     `

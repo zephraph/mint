@@ -7,6 +7,8 @@ module Mint
     @pattern = [] of String
     @progress = false
     @include_core = true
+    @external_javascripts : String | Nil = nil
+    @external_stylesheets : String | Nil = nil
 
     getter include_core
 
@@ -28,6 +30,14 @@ module Mint
         @channel.receive
         yield compile
       end
+    end
+
+    def external_javascripts
+      @external_javascripts ||= SourceFiles.external_javascripts
+    end
+
+    def external_stylesheets
+      @external_stylesheets ||= SourceFiles.external_stylesheets
     end
 
     def terminal
@@ -56,8 +66,8 @@ module Mint
       end
 
       if print
-        elapsed = TimeFormat.auto(elapsed).colorize.mode(:bold).to_s
-        terminal.io.print "#{prefix}... #{elapsed}".ljust(line.size) + "\n"
+        elapsed = TimeFormat.auto(elapsed).colorize.mode(:bold)
+        terminal.io.puts "#{prefix}... #{elapsed}".ljust(line.size)
       end
 
       @progress = false
@@ -81,7 +91,7 @@ module Mint
         Watcher.new(@pattern)
 
       static_watcher =
-        Watcher.new(SourceFiles.javascripts)
+        Watcher.new(SourceFiles.external_files)
 
       spawn do
         # When the mint.json changes
@@ -99,7 +109,7 @@ module Mint
             {} of String => Ast
 
           static_watcher.pattern =
-            SourceFiles.javascripts
+            SourceFiles.external_files
 
           # Update the pattern on the watcher.
           source_watcher.pattern =
@@ -111,6 +121,9 @@ module Mint
 
       spawn do
         static_watcher.watch do
+          @external_javascripts = nil
+          @external_stylesheets = nil
+
           @channel.send(nil)
         end
       end

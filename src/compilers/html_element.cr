@@ -12,9 +12,12 @@ module Mint
         end.reject(&.empty?)
           .join(" + ")
       else
-        value
-          .select(&.is_a?(String))
-          .join(" ")
+        result =
+          value
+            .select(String)
+            .join(' ')
+
+        "`#{result}`"
       end
     end
 
@@ -44,10 +47,10 @@ module Mint
         node.styles.map { |item| lookups[item] }
 
       class_name =
-        if style_nodes.any?
-          style_nodes.map do |style_node|
+        unless style_nodes.empty?
+          style_nodes.join(' ') do |style_node|
             style_builder.style_pool.of(style_node, nil)
-          end.join(" ")
+          end
         end
 
       class_name_attribute =
@@ -83,13 +86,16 @@ module Mint
           arguments =
             compile item.arguments
 
-          styles << js.call("this.$#{class_name}", arguments)
+          style_name =
+            style_builder.style_pool.of(lookups[item], nil)
+
+          styles << js.call("this.$#{style_name}", arguments)
         end
       end
 
       styles << custom_styles if custom_styles
 
-      if styles.any?
+      unless styles.empty?
         attributes["style"] = "_style([#{styles.join(", ")}])"
       end
 

@@ -7,7 +7,7 @@ module Mint
     abstract def class(name : String, extends : String, body : Array(String)) : String
     abstract def assign(name : String, value : String) : String
     abstract def statements(items : Array(String)) : String
-    abstract def ifchain(items : Array(String)) : String
+    abstract def ifchain(items : Array(Tuple(String | Nil, String))) : String
     abstract def store(name : String, body : Array(String)) : String
     abstract def module(name : String, body : Array(String)) : String
     abstract def provider(name : String, body : Array(String)) : String
@@ -26,6 +26,23 @@ module Mint
     abstract def css_rule(name : String, definitions : Array(String)) : String
     abstract def css_rules(rules : Array(String)) : String
     abstract def for(condition : String, body : String) : String
+
+    def ifchain(items : Array(Tuple(String | Nil, String))) : String
+      items
+        .sort_by { |(condition, _)| condition.nil? ? 1 : -1 }
+        .map_with_index do |(condition, body), index|
+          case
+          when index == 0 && condition.nil?
+            body # This branch handles only one item which does not have condition
+          when condition.nil?
+            self.else { body }
+          when index == 0
+            self.if(condition.to_s, body)
+          else
+            self.elseif(condition) { body }
+          end
+        end.join(' ')
+    end
   end
 
   class Optimized < Renderer
@@ -47,15 +64,13 @@ module Mint
 
     def object(hash : Hash(String, String)) : String
       body =
-        hash
-          .map { |key, value| "#{key}:#{value}" }
-          .join(",")
+        hash.join(',') { |key, value| "#{key}:#{value}" }
 
       "{#{body}}"
     end
 
     def function(name : String, arguments : Array(String), body : String) : String
-      "#{name}(#{arguments.join(",")}){#{body}}"
+      "#{name}(#{arguments.join(',')}){#{body}}"
     end
 
     def arrow_function(arguments : Array(String), body : String) : String
@@ -75,11 +90,7 @@ module Mint
     end
 
     def statements(items : Array(String)) : String
-      items.join(";")
-    end
-
-    def ifchain(items : Array(String)) : String
-      items.join("")
+      items.join(';')
     end
 
     def store(name : String, body : Array(String)) : String
@@ -135,7 +146,7 @@ module Mint
     end
 
     def array(items : Array(String)) : String
-      "[#{items.join(",")}]"
+      "[#{items.join(',')}]"
     end
   end
 
@@ -145,7 +156,7 @@ module Mint
     end
 
     def css_rule(name, definitions) : String
-      "#{name} {\n#{definitions.join("\n").indent}\n}"
+      "#{name} {\n#{definitions.join('\n').indent}\n}"
     end
 
     def css_rules(rules) : String
@@ -157,15 +168,13 @@ module Mint
     end
 
     def object(hash : Hash(String, String)) : String
-      if hash.any?
+      if hash.empty?
+        "{}"
+      else
         body =
-          hash
-            .map { |key, value| "#{key}: #{value}" }
-            .join(",\n")
+          hash.join(",\n") { |key, value| "#{key}: #{value}" }
 
         "{\n#{body.indent}\n}"
-      else
-        "{}"
       end
     end
 
@@ -194,9 +203,9 @@ module Mint
         last = items[index - 1]? if index > 0
 
         if last
-          if last.includes?("\n")
+          if last.includes?('\n')
             memo += "\n\n"
-          elsif item.includes?("\n")
+          elsif item.includes?('\n')
             memo += "\n\n"
           else
             memo += "\n"
@@ -204,13 +213,9 @@ module Mint
         end
 
         memo += item
-        memo += ";" unless memo.ends_with?(";")
+        memo += ";" unless memo.ends_with?(';')
         memo
       end
-    end
-
-    def ifchain(items : Array(String)) : String
-      items.join(" ")
     end
 
     def store(name : String, body : Array(String)) : String
@@ -267,10 +272,10 @@ module Mint
     end
 
     def array(items : Array(String)) : String
-      if items.any?
-        "[\n#{items.join(",\n").indent}\n]"
-      else
+      if items.empty?
         "[]"
+      else
+        "[\n#{items.join(",\n").indent}\n]"
       end
     end
 
@@ -352,7 +357,7 @@ module Mint
     end
 
     def call(name, props)
-      "#{name}(#{props.join(",")})"
+      "#{name}(#{props.join(',')})"
     end
 
     def function(name, arguments = [] of String) : String
@@ -394,7 +399,7 @@ module Mint
     private def next_variable
       @next_variable = @next_variable.succ
 
-      if ["do", "in", "for", "if"].includes?(@next_variable)
+      if @next_variable.in?("do", "in", "for", "if")
         next_variable
       else
         @next_variable
