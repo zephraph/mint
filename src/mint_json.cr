@@ -34,7 +34,7 @@ module Mint
 
     def self.from_file(path)
       new File.read(path), File.dirname(path), path
-    rescue exception : Errno
+    rescue exception : IO::Error
       raise MintJsonInvalidFile, {
         "result" => exception.to_s,
         "path"   => path,
