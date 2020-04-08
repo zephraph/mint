@@ -157,7 +157,9 @@ module Mint
 
     def static_pattern : Array(String)
       json
-        .external_javascripts
+        .external_files
+        .values
+        .flatten
     end
 
     def update_cache

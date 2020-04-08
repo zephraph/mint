@@ -32,8 +32,8 @@ module Mint
           end
 
         self << Ast::Property.new(
-          default: default.as(Ast::Expression),
           from: start_position,
+          default: default,
           comment: comment,
           to: position,
           input: data,

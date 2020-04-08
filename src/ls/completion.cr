@@ -15,6 +15,7 @@ module Mint
                 Mint::Formatter
                   .new(workspace.ast, workspace.json.formatter_config)
                   .format(property.default)
+                  .to_s
                   .gsub("}", "\\}")
 
               type =
