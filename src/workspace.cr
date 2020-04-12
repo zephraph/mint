@@ -61,6 +61,8 @@ module Mint
     property format : Bool = false
 
     def initialize(@root : String)
+      FileUtils.cd @root
+
       json_path =
         File.join(@root, "mint.json")
 
@@ -184,11 +186,14 @@ module Mint
 
     def update(contents, file)
       @cache[file] = process(contents, file)
-      puts @cache.keys.inspect, file.inspect
       check!
       @error = nil
+
+      call "change", ast
     rescue error : Error
       @error = error
+
+      call "change", error
     end
 
     private def process(contents, file)

@@ -62,10 +62,14 @@ module Mint
 
         workspace = Workspace[uri.path.to_s]
         workspace.update(params.content_changes.first.text, uri.path)
-        server.log(Workspace.workspaces.keys)
-        server.log(params.to_json)
-        server.log(workspace.cache.keys)
+
+        server.log(workspace.cache.keys.includes?(uri.path))
+        server.log(params.content_changes.first.text)
         server.log(uri.path)
+
+        if workspace.error
+          server.log("WTF")
+        end
       end
     end
   end

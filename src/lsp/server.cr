@@ -1,5 +1,12 @@
+require "log"
+
 module LSP
   class Server
+    Backend = ::Log::IOBackend.new(File.new("lsp.log", "w+"))
+
+    Log = ::Log.for("lsp")
+    ::Log.builder.bind "*", :debug, Backend
+
     @@methods = {} of String => RequestMessage.class | NotificationMessage.class
 
     macro method(name, message)
@@ -19,6 +26,8 @@ module LSP
     end
 
     def log(message)
+      # Log.info { message }
+
       send({
         jsonrpc: "2.0",
         method:  "window/logMessage",
@@ -31,6 +40,7 @@ module LSP
 
     def read
       MessageParser.parse(@in) do |name, json|
+        log(name)
         method = @@methods[name]?
 
         if method
@@ -39,8 +49,9 @@ module LSP
             .execute(self)
         end
       end
-      # rescue error
-      #   log(error.to_s)
+    rescue error
+      log(error.to_s)
+      error.backtrace?.try(&.each { |item| log(item) })
     end
   end
 end

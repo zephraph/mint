@@ -14,7 +14,7 @@ module Mint
         skip unless keyword "property"
         whitespace
 
-        name = variable! PropertyExpectedName
+        name = variable! PropertyExpectedName, track: false
         whitespace
 
         type =
