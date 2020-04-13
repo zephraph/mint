@@ -9,9 +9,9 @@ module Mint
       end
     end
 
-    getter ast, config
+    getter config
 
-    def initialize(@ast : Ast, @config : Config = Config.new)
+    def initialize(@config : Config = Config.new)
       @skip = [] of {String, String}
     end
 
@@ -22,6 +22,24 @@ module Mint
     def replace_skipped(result)
       @skip.reverse.reduce(result) do |memo, (digest, item)|
         memo.sub(digest, item)
+      end
+    end
+
+    def format_parameters(parameters)
+      return if parameters.empty?
+
+      "(#{format(parameters, ", ")})"
+    end
+
+    def format_arguments(arguments : Array(Ast::Argument))
+      return if arguments.empty?
+      value =
+        format arguments
+
+      if value.map { |string| replace_skipped(string) }.map(&.size).sum > 50
+        "(\n#{indent(value.join(",\n"))}\n)"
+      else
+        "(#{value.join(", ")})"
       end
     end
 

@@ -23,8 +23,8 @@ describe "Language Server - Hover" do
           id:      0,
           result:  {
             contents: [
-              "div",
-              Mint::LS::Hover::HTML_ELEMENTS["div"],
+              "**div**\n",
+              HTML.escape(Mint::LS::Hover::HTML_ELEMENTS["div"]),
             ],
           },
         }

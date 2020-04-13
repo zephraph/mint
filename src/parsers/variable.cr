@@ -61,8 +61,8 @@ module Mint
       start { variable_with_dashes! SkipError, track }
     end
 
-    def variable : Ast::Variable | Nil
-      start { variable! SkipError }
+    def variable(track = true) : Ast::Variable | Nil
+      start { variable! SkipError, track }
     end
   end
 end

@@ -2,9 +2,7 @@ module Mint
   class Formatter
     def format(node : Ast::EnumId)
       expressions =
-        unless node.expressions.empty?
-          "(#{format(node.expressions, ", ")})"
-        end
+        format_parameters(node.expressions)
 
       "#{node.name}::#{node.option}#{expressions}"
     end

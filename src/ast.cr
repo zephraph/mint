@@ -54,11 +54,11 @@ module Mint
       @components.find(&.name.==("Main"))
     end
 
-    def space_separated?(node1, node2)
+    def self.space_separated?(node1, node2)
       node1.input.input[node1.from, node2.from - node1.from].includes?("\n\n")
     end
 
-    def new_line?(node1, node2)
+    def self.new_line?(node1, node2)
       node1.input.input[node1.from, node2.from - node1.from].includes?('\n')
     end
 

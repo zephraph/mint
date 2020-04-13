@@ -36,7 +36,7 @@ module Mint
                   Parser.parse(file)
 
                 formatted =
-                  Formatter.new(artifact, MintJson.parse_current.formatter_config).format
+                  Formatter.new(MintJson.parse_current.formatter_config).format(artifact)
 
                 if formatted != File.read(file)
                   File.write(file, formatted)

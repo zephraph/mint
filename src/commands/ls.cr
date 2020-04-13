@@ -4,6 +4,8 @@ module Mint
       define_help description: "Language Server"
 
       def run
+        Colorize.enabled = false
+
         server = LS::Server.new(STDIN, STDOUT)
 
         loop do

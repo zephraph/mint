@@ -8,6 +8,18 @@ module Mint
       method "shutdown", Shutdown
       method "exit", Exit
 
+      def debug_stack(stack)
+        stack.each_with_index do |item, index|
+          class_name = item.class
+
+          if index == 0
+            log class_name.to_s
+          else
+            log "#{" " * (index - 1)} ↳ #{class_name}"
+          end
+        end
+      end
+
       def nodes_at_cursor(params : LSP::TextDocumentPositionParams)
         workspace =
           Mint::Workspace[params.path]

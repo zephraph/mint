@@ -96,6 +96,13 @@ macro expect_error(sample, error)
   end
 end
 
+module LSP
+  class Server
+    def log(message)
+    end
+  end
+end
+
 class Workspace
   @id : String
   @files : Hash(String, File) = {} of String => File

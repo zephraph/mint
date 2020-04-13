@@ -1,157 +1,87 @@
 module Mint
   module LS
+    # This is the class that handles the "textDocument/hover" request.
     class Hover < LSP::RequestMessage
       property params : LSP::TextDocumentPositionParams
 
-      HTML_ELEMENTS = {
-        "div" => "The **HTML Content Division element (<div>)** is the generic container for flow content. It has no effect on the content or layout until styled using CSS.",
-      }
-
-      def hover(node : Ast::HtmlElement, workspace)
-        <<-MARKDOWN
-        **#{node.tag.value}**
-
-        ------
-
-        #{HTML_ELEMENTS[node.tag.value]? || ""}
-        MARKDOWN
+      # Fallback handler for nil, obviously it should not happen.
+      def hover(node : Nil, workspace) : Array(String | Nil)
+        ["SHOULD NOT HAPPEN"] of String | Nil
       end
 
-      def hover(node : Ast::Function, workspace)
-        formatted =
-          Mint::Formatter
-            .new(workspace.ast, workspace.json.formatter_config)
-            .format(node)
-            .to_s
-
-        <<-MARKDOWN
-        Function: **#{node.name.value}**
-
-        ------
-
-        ```mint
-        #{formatted}
-        ```
-        MARKDOWN
-      end
-
-      def hover(node : Ast::ModuleAccess, workspace)
-        if item = workspace.type_checker.lookups[node.variable]?
-          hover(item, workspace)
-        end
-      end
-
-      def hover(node : Ast::EnumId, workspace)
-        item =
-          workspace.ast.enums.find(&.name.==(node.name))
-
-        case item
-        when Ast::Enum
-          formatted =
-            Mint::Formatter
-              .new(workspace.ast, workspace.json.formatter_config)
-              .format(item)
-              .to_s
-
-          <<-MARKDOWN
-          Enum: **#{item.name}**
-
-          ------
-
-          ```mint
-          #{formatted}
-          ```
-          MARKDOWN
-        else
-          nil
-        end
-      end
-
-      def hover(node : Ast::Property, workspace)
-        formatted =
-          Mint::Formatter
-            .new(workspace.ast, workspace.json.formatter_config)
-            .format(node)
-            .to_s
+      # Fallback handler for nodes that does not have a handler yet.
+      def hover(node : Ast::Node, workspace) : Array(String | Nil)
+        type =
+          workspace.type_checker.cache[node]?.try do |value|
+            "TYPE: #{value.to_mint}"
+          end
 
         [
-          formatted,
-          node.comment.to_s,
+          "MISSING HOVER INFO: #{node.class}\n",
+          type,
         ]
       end
 
-      def hover(node : Ast::Node, workspace)
-        node.class.to_s
-      end
-
       def execute(server)
-        uri = URI.parse(params.text_document.uri)
+        # Get the URI of the text document
+        uri =
+          URI.parse(params.text_document.uri)
 
-        workspace = Workspace[uri.path.to_s]
+        # Get the workspace associated with the text document
+        # this could take a while because the workspace parses
+        # and type checks all of it's source files.
+        workspace =
+          Workspace[uri.path.to_s]
 
         contents =
           if error = workspace.error
-            "Cannot provide hover data because, there is an error with your project #{error}"
+            # If the workspace has an error we cannot really
+            # provide and hover information, so we just provide
+            # the error istead.
+            [
+              "Cannot provide hover data because of an error:\n",
+              error.to_terminal.to_s,
+            ]
           else
-            result = server.nodes_at_cursor(params)
+            # We get the stack of nodes under the cursor
+            stack =
+              server.nodes_at_cursor(params)
 
-            result.each_with_index do |i, index|
-              x = i.class
+            # TODO: Print the stack for debugging purposes.
+            server.debug_stack(stack)
 
-              if index == 0
-                server.log x.to_s
-              else
-                server.log "#{" " * (index - 1)} ↳ #{x}"
-              end
-            end
-
-            node = result[0]?
-            parent = result[1]?
+            node, parent =
+              stack
 
             case node
             when Ast::Variable
-              workspace.type_checker.scope(result[1..]) do
-                item =
-                  workspace.type_checker.lookup(node)
+              # If the first node under the cursor is a variable then
+              # get the associated nodes information and hover that
+              # otherwise get the hover information of the parent.
+              lookup =
+                workspace.type_checker.variables[node]?
 
-                case item
+              if lookup
+                case item = lookup[0]
                 when Ast::Node
                   hover(item, workspace)
                 else
-                  nil
-                end
-              end
-            when Ast::ModuleAccess
-              hover(node, workspace)
-            when Ast::Property
-              hover(node, workspace)
-            when Ast::Function
-              hover(node, workspace)
-            when Ast::HtmlElement
-              hover(node, workspace)
-            when Ast::EnumId
-              hover(node, workspace)
-            else
-              case node
-              when Ast::Node
-                type = workspace.type_checker.cache[node]?
-
-                if type
-                  "Type: \n#{type.to_mint}"
-                else
-                  "ASD"
+                  [item.to_s]
                 end
               else
-                "WTF"
+                hover(parent, workspace)
               end
+            else
+              hover(node, workspace)
             end
           end
 
+        # Send the response.
         server.send({
           jsonrpc: "2.0",
           id:      id,
           result:  {
-            contents: contents,
+            contents: contents.compact,
           },
         })
       end

@@ -56,18 +56,22 @@ module Mint
     getter error : Error | Nil
     getter json : MintJson
     getter root : String
+    getter formatter : Formatter
     getter cache : Hash(String, Ast)
 
     property format : Bool = false
 
     def initialize(@root : String)
-      FileUtils.cd @root
-
       json_path =
         File.join(@root, "mint.json")
 
       @json =
-        MintJson.from_file(json_path)
+        FileUtils.cd @root do
+          MintJson.from_file(json_path)
+        end
+
+      @formatter =
+        Mint::Formatter.new(json.formatter_config)
 
       @json_watcher =
         Watcher.new([json_path])
@@ -202,8 +206,8 @@ module Mint
       if format
         formatted =
           Formatter
-            .new(ast, json.formatter_config)
-            .format
+            .new(json.formatter_config)
+            .format(ast)
 
         if formatted != File.read(file)
           File.write(file, formatted)
