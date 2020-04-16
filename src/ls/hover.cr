@@ -40,7 +40,7 @@ module Mint
             # the error istead.
             [
               "Cannot provide hover data because of an error:\n",
-              error.to_terminal.to_s,
+              "```\n#{error.to_terminal.to_s}\n```",
             ]
           else
             # We get the stack of nodes under the cursor
@@ -50,8 +50,8 @@ module Mint
             # TODO: Print the stack for debugging purposes.
             server.debug_stack(stack)
 
-            node, parent =
-              stack
+            node = stack[0]?
+            parent = stack[1]?
 
             case node
             when Ast::Variable
@@ -63,6 +63,8 @@ module Mint
 
               if lookup
                 case item = lookup[0]
+                when Tuple(Ast::Node, Int32)
+                  hover(item[0], workspace)
                 when Ast::Node
                   hover(item, workspace)
                 else

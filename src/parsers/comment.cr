@@ -10,7 +10,7 @@ module Mint
         keyword "*/"
         whitespace
 
-        self << Ast::Comment.new(
+        Ast::Comment.new(
           from: start_position,
           value: value,
           to: position,
