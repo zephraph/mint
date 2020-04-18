@@ -6,7 +6,8 @@ module Mint
           workspace
             .type_checker
             .cache[node]?
-            .try(&.to_mint)
+            .try(&.to_pretty)
+            .try { |value| "```\n#{value}\n```" }
 
         head =
           node.target.try do |target|
